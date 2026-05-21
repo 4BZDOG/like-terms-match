@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ALGEBRA CRUSH: COSMIC WARP</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            background-color: #020206;
+            font-family: 'Courier New', Courier, monospace;
+            color: #00ffcc;
+            user-select: none;
+        }
+
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        /* HUD layout */
+        .hud {
+            position: absolute;
+            z-index: 10;
+            pointer-events: none; /* Let clicks pass to 3D grid by default */
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            width: 100%;
+            height: 100%;
+        }
+
+        .hud-top {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            gap: 15px;
+        }
+
+        /* Highly translucent default state with transitions */
+        .hud-panel {
+            background: rgba(2, 2, 8, 0.5); 
+            border: 2px solid #00ffcc;
+            box-shadow: 0 0 15px rgba(0, 255, 204, 0.15);
+            padding: 12px 18px;
+            border-radius: 6px;
+            pointer-events: auto; /* Capture pointer for hovers, block background 3D clicks */
+            transition: 
+                background-color 0.25s cubic-bezier(0.25, 1, 0.5, 1), 
+                transform 0.25s cubic-bezier(0.25, 1, 0.5, 1), 
+                box-shadow 0.25s cubic-bezier(0.25, 1, 0.5, 1), 
+                border-color 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+            transform-origin: center;
+        }
+
+        /* Hover: Less translucent (more opaque), enlarged, and enhanced glow */
+        .hud-panel:hover {
+            background: rgba(2, 2, 8, 0.96); 
+            transform: scale(1.06); 
+            box-shadow: 0 0 25px rgba(0, 255, 204, 0.45);
+            z-index: 20;
+        }
+
+        /* Prominent Score Container */
+        .score-board {
+            text-align: center;
+            min-width: 160px;
+            border-color: #ff00ff;
+            box-shadow: 0 0 15px rgba(255, 0, 255, 0.15);
+        }
+
+        .score-board:hover {
+            border-color: #ff00ff;
+            box-shadow: 0 0 25px rgba(255, 0, 255, 0.45);
+        }
+
+        #score-val-container {
+            font-size: 38px;
+            font-weight: bold;
+            color: #00ffcc;
+            text-shadow: 0 0 15px #00ffcc;
+            transition: transform 0.15s ease-out, color 0.15s;
+            display: inline-block;
+            margin-top: 5px;
+        }
+
+        /* Stats & Timers */
+        .stats {
+            font-size: 13px;
+            line-height: 1.4;
+            flex-grow: 1;
+            max-width: 400px;
+        }
+
+        .bar-container {
+            width: 100%;
+            height: 10px;
+            background: #111;
+            border: 1px solid #00ffcc;
+            margin-top: 3px;
+            margin-bottom: 8px;
+            position: relative;
+        }
+
+        .bar-fill {
+            width: 100%;
+            height: 100%;
+            background: #00ffcc;
+            transition: width 0.15s ease-out;
+            box-shadow: 0 0 10px #00ffcc;
+        }
+
+        #time-bar {
+            background: #ffaa00;
+            box-shadow: 0 0 10px #ffaa00;
+        }
+
+        .time-container {
+            border-color: #ffaa00;
+        }
+
+        /* Realtime Hover Block Scanner */
+        .scanner-panel {
+            border-color: #ffaa00;
+            box-shadow: 0 0 15px rgba(255, 170, 0, 0.15);
+            width: 300px;
+            text-align: left;
+        }
+
+        .scanner-panel:hover {
+            border-color: #ffaa00;
+            box-shadow: 0 0 25px rgba(255, 170, 0, 0.4);
+        }
+
+        .scanner-header {
+            font-size: 11px;
+            color: #ffaa00;
+            text-align: center;
+            border-bottom: 1px dashed #ffaa00;
+            padding-bottom: 4px;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .scanner-data {
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .scanner-data span {
+            color: #fff;
+            font-weight: bold;
+        }
+
+        .scanner-info {
+            font-size: 11px;
+            color: #888;
+            margin-top: 6px;
+            border-top: 1px solid #222;
+            padding-top: 4px;
+        }
+
+        /* Logs */
+        .log-panel {
+            width: 440px;
+            height: 110px;
+            font-size: 11px;
+            overflow: hidden;
+            color: #ffaa00;
+            border-color: #ffaa00;
+            box-shadow: 0 0 15px rgba(255, 170, 0, 0.1);
+            display: flex;
+            flex-direction: column-reverse;
+            pointer-events: auto;
+        }
+
+        .log-panel:hover {
+            box-shadow: 0 0 25px rgba(255, 170, 0, 0.25);
+        }
+
+        .log-entry {
+            margin-bottom: 4px;
+            line-height: 1.3;
+        }
+
+        /* Overlay screens */
+        .screen-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(2, 2, 8, 0.97);
+            text-align: center;
+            box-sizing: border-box;
+            padding: 30px;
+        }
+
+        .btn {
+            background: transparent;
+            border: 2px solid #00ffcc;
+            color: #00ffcc;
+            padding: 14px 35px;
+            font-size: 18px;
+            font-family: inherit;
+            cursor: pointer;
+            margin-top: 20px;
+            box-shadow: 0 0 12px rgba(0, 255, 204, 0.2);
+            transition: all 0.2s ease;
+        }
+
+        .btn:hover {
+            background: #00ffcc;
+            color: #020206;
+            box-shadow: 0 0 25px rgba(0, 255, 204, 0.7);
+            transform: scale(1.04);
+        }
+
+        .vocab-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            max-width: 900px;
+            margin: 20px 0;
+        }
+
+        .vocab-card {
+            background: rgba(8, 8, 25, 0.7);
+            border: 1px solid #ff00ff;
+            padding: 12px;
+            border-radius: 4px;
+            text-align: left;
+        }
+
+        .vocab-card h3 {
+            margin: 0 0 6px 0;
+            color: #ff00ff;
+            font-size: 14px;
+        }
+
+        .vocab-card p {
+            margin: 0;
+            font-size: 11px;
+            line-height: 1.4;
+            color: #fff;
+            opacity: 0.9;
+        }
+
+        .example-box {
+            background: rgba(0, 255, 204, 0.04);
+            border: 1px dashed #00ffcc;
+            padding: 10px;
+            max-width: 720px;
+            font-size: 12px;
+            line-height: 1.5;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+
+        #game-over-screen {
+            display: none;
+            background: rgba(18, 0, 8, 0.97);
+            border: 4px solid #ff0055;
+        }
+
+        #game-over-screen h1 {
+            color: #ff0055;
+            text-shadow: 0 0 25px #ff0055;
+            font-size: 42px;
+            margin-bottom: 8px;
+        }
+
+        .stats-report {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid #ff0055;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: left;
+            min-width: 300px;
+            font-size: 13px;
+            line-height: 1.8;
+            margin: 15px 0;
+        }
+
+        .controls-hint {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+
+    <!-- HUD Overlay -->
+    <div class="hud" id="hud" style="display: none;">
+        <div class="hud-top">
+            <!-- Left Scoreboard -->
+            <div class="hud-panel score-board">
+                <div style="font-size: 11px; color: #ff00ff; letter-spacing: 1px; font-weight: bold;">SIMPLIFIED TERMS</div>
+                <div id="score-val-container"><span id="score-val">0</span></div>
+                <div style="font-size: 11px; color: #888; margin-top: 5px;">LEVEL: <span id="level-val">1</span></div>
+            </div>
+
+            <!-- Middle Depletion Gauges -->
+            <div class="hud-panel stats">
+                <div>STABILITY SHIELD: <span id="shield-val">100</span>%</div>
+                <div class="bar-container">
+                    <div class="bar-fill" id="shield-bar"></div>
+                </div>
+                <div>MATRIX SYSTEM TIME: <span id="time-val">60</span>s</div>
+                <div class="bar-container time-container">
+                    <div class="bar-fill" id="time-bar"></div>
+                </div>
+            </div>
+
+            <!-- Right Hover Block Scanner -->
+            <div class="hud-panel scanner-panel">
+                <div class="scanner-header">NODE DETECTOR SCANNER</div>
+                <div class="scanner-data">
+                    <div>VALUE: <span id="scan-term">---</span></div>
+                    <div>CLASSIFICATION: <span id="scan-type">---</span></div>
+                    <div>COEFFICIENT: <span id="scan-coeff">---</span></div>
+                    <div>PRONUMERAL: <span id="scan-pr">---</span></div>
+                </div>
+                <div class="scanner-info">Swap adjacent nodes. Align identical pronumerals!</div>
+            </div>
+        </div>
+
+        <div class="powerup-indicator" id="pw-indicator">TRIPLE LASERS ACTIVE</div>
+
+        <!-- Log Panel -->
+        <div class="hud-panel log-panel" id="log-panel"></div>
+    </div>
+
+    <!-- Onboarding Panel -->
+    <div class="screen-overlay" id="start-screen">
+        <h1 style="color: #00ffcc; text-shadow: 0 0 15px #00ffcc; font-size: 36px; margin: 0 0 5px 0;">ALGEBRA CRUSH</h1>
+        <p style="color: #ff00ff; font-size: 15px; max-width: 750px; margin: 0 auto; line-height: 1.4;">
+            Align the coordinates to simplify coefficients. Swap nodes to align 3 or more <b>like terms</b>!
+        </p>
+
+        <div class="vocab-grid">
+            <div class="vocab-card">
+                <h3>1. PRONUMERAL</h3>
+                <p>The variable letters (e.g., <b>x</b>, <b>y</b>, <b>x²</b>). Like terms must contain the <b>exact same pronumerals</b> with identical powers.</p>
+            </div>
+            <div class="vocab-card">
+                <h3>2. COEFFICIENT</h3>
+                <p>The multiplier number in front (e.g., the <b>-4</b> in <b>-4x</b>). Coefficients <b>do not matter</b> when matching like terms!</p>
+            </div>
+            <div class="vocab-card">
+                <h3>3. CONSTANT</h3>
+                <p>Isolated numbers with no variables (e.g., <b>9</b>, <b>-3</b>, <b>i²</b> which resolves to -1). Constants are always like terms with other constants.</p>
+            </div>
+        </div>
+
+        <div class="example-box">
+            <b>ADAPTIVE SCAFFOLDING ENGAGED:</b> Level 1 features color-coded backplates on blocks to help build matching confidence. 
+            As you level up, these help colors will fade away, forcing you to identify terms strictly by reading the variables!
+        </div>
+
+        <button class="btn" id="start-btn">INITIALIZE MATRIX</button>
+        <div class="controls-hint">
+            Left Click Block A &rarr; Click Adjacent Block B to Swap &nbsp;|&nbsp; Right Click / Drag to rotate board
+        </div>
+    </div>
+
+    <!-- Game Over Panel with Statistics -->
+    <div class="screen-overlay" id="game-over-screen">
+        <h1>MATRIX CRITICAL BREAKDOWN</h1>
+        <p style="font-size: 14px; color: #fff; max-width: 500px; line-height: 1.5; margin: 0;">
+            Equation structure collapsed. Review your algebraic diagnostic stats:
+        </p>
+        
+        <div class="stats-report">
+            <div style="font-size: 15px; color: #ffaa00; font-weight: bold; border-bottom: 1px dashed #ff0055; margin-bottom: 8px; padding-bottom: 4px; text-align: center;">ALGEBRAIC SCORECARD</div>
+            • HIGHEST MATRIX STAGE: <span id="stat-level" style="color: #ff00ff; font-weight: bold;">1</span><br/>
+            • TERMS SIMPLIFIED: <span id="stat-matches" style="color: #00ffcc; font-weight: bold;">0</span><br/>
+            • ALGEBRAIC VIOLATIONS: <span id="stat-violations" style="color: #ff0055; font-weight: bold;">0</span><br/>
+            • SWAP ACCURACY RATING: <span id="stat-accuracy" style="color: #ffff00; font-weight: bold;">100%</span>
+        </div>
+
+        <button class="btn" id="restart-btn" style="border-color: #ff0055; color: #ff0055;">RESET EQUATIONS</button>
+    </div>
+
+    <!-- Three.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            if (typeof THREE === 'undefined') {
+                alert("Three.js failed to load. Check your internet connection.");
+                return;
+            }
+
+            // --- SYNTH AUDIOS ---
+            let audioCtx = null;
+            function initAudio() {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            function playTick() {
+                if (!audioCtx) return;
+                const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.type = 'sine'; osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                osc.frequency.setValueAtTime(800, audioCtx.currentTime + 0.02);
+                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.06);
+            }
+
+            function playMatch() {
+                if (!audioCtx) return;
+                const now = audioCtx.currentTime;
+                [261.63, 329.63, 392.00, 523.25].forEach((f, i) => {
+                    const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+                    osc.type = 'triangle'; osc.frequency.value = f;
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    gain.gain.setValueAtTime(0, now);
+                    gain.gain.linearRampToValueAtTime(0.08, now + i * 0.04);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.04 + 0.25);
+                    osc.start(now + i * 0.04); osc.stop(now + i * 0.04 + 0.3);
+                });
+            }
+
+            function playDissonance() {
+                if (!audioCtx) return;
+                const osc1 = audioCtx.createOscillator(), osc2 = audioCtx.createOscillator(), gain = audioCtx.createGain();
+                osc1.connect(gain); osc2.connect(gain); gain.connect(audioCtx.destination);
+                osc1.type = 'sawtooth'; osc1.frequency.setValueAtTime(140, audioCtx.currentTime);
+                osc2.type = 'sawtooth'; osc2.frequency.setValueAtTime(145, audioCtx.currentTime); 
+                osc1.frequency.linearRampToValueAtTime(60, audioCtx.currentTime + 0.45);
+                osc2.frequency.linearRampToValueAtTime(63, audioCtx.currentTime + 0.45);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.45);
+                osc1.start(); osc2.start();
+                osc1.stop(audioCtx.currentTime + 0.46); osc2.stop(audioCtx.currentTime + 0.46);
+            }
+
+            // --- ALGEBRA DEFINITION SYSTEM ---
+            const TERM_GROUPS = {
+                'x': { label: 'PRONUMERAL: x', desc: 'Terms with "x".', terms: ['x', '5x', '-8x', '11x', '-x', '15x'] },
+                'y': { label: 'PRONUMERAL: y', desc: 'Terms with "y".', terms: ['y', '3y', '-6y', '12y', '-y', '8y'] },
+                'const': { label: 'CONSTANTS', desc: 'Normal isolated numbers.', terms: ['4', '-9', 'π', '42', '-1', 'i²'] },
+                'x2': { label: 'PRONUMERAL: x²', desc: 'Terms containing x squared.', terms: ['x²', '3x²', '-4x²', '6x²', '-x²'] },
+                'xy': { label: 'PRONUMERAL: xy', desc: 'Terms containing products xy.', terms: ['xy', '4xy', '-3xy', '8xy', '-xy'] }
+            };
+
+            const LEVEL_GROUPS = [
+                ['x', 'y', 'const'], 
+                ['x', 'y', 'const', 'x2'], 
+                ['x', 'y', 'const', 'x2', 'xy'] 
+            ];
+
+            function parseAlgebraTerm(term, groupKey) {
+                if (groupKey === 'const') {
+                    let val = parseFloat(term);
+                    if (term === 'π') val = 3.14;
+                    if (term === 'i²') val = -1;
+                    return { coefficient: term, numericCoeff: val, pronumeral: 'None', type: 'Constant' };
+                }
+                const match = term.match(/^([+-]?\d*(?:\.\d+)?)(.*)$/);
+                let coeffStr = match[1];
+                let pronumeral = match[2];
+                let coefficient = coeffStr;
+                let val = parseFloat(coeffStr);
+
+                if (!coeffStr || coeffStr === '+') {
+                    coefficient = '1 (implied)';
+                    val = 1;
+                } else if (coeffStr === '-') {
+                    coefficient = '-1 (implied)';
+                    val = -1;
+                }
+                
+                return { coefficient: coefficient, numericCoeff: val, pronumeral: pronumeral, type: 'Variable Term' };
+            }
+
+
+            // --- SIMULATION PARAMETERS ---
+            let level = 1;
+            let score = 0;
+            let shield = 100;
+            let gameActive = false;
+            let shakeIntensity = 0; 
+            
+            // Urgency Timer variables
+            let timeLeft = 60;
+            const maxTime = 60;
+            let lastFrameTime = performance.now();
+
+            // Tactical Student Statistics Tracker
+            let stats = {
+                matchesMade: 0,
+                violations: 0,
+                totalSwaps: 0,
+                accuracy: 100
+            };
+
+            let rows = 5;
+            let cols = 5;
+            const nodeSpacing = 2.4;
+
+            let scene, camera, renderer, selectionRing; 
+            let gridContainer; 
+            let raycaster, mouse;
+            let currentHoveredNode = null;
+            let selectedNode = null;
+
+            // Parallax Starfields (Slow/Deep vs Fast/Close)
+            let starfieldSlow, starfieldFast;
+
+            let board = []; 
+            const particles = [];
+            const floatingTexts = [];
+
+            // UI Elements
+            const shieldBar = document.getElementById('shield-bar');
+            const shieldVal = document.getElementById('shield-val');
+            const scoreVal = document.getElementById('score-val');
+            const levelVal = document.getElementById('level-val');
+            const timeBar = document.getElementById('time-bar');
+            const timeVal = document.getElementById('time-val');
+
+            let boardState = "READY"; 
+            let animationTimer = 0;
+            let animationSwapPair = []; 
+
+            function init() {
+                scene = new THREE.Scene();
+                scene.fog = new THREE.FogExp2(0x020206, 0.02);
+
+                camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+                camera.position.set(0, 0, 16);
+
+                renderer = new THREE.WebGLRenderer({ antialias: true });
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+                scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+                const dLight = new THREE.DirectionalLight(0xff00ff, 0.95);
+                dLight.position.set(5, 10, 15);
+                scene.add(dLight);
+
+                const pointLight = new THREE.PointLight(0x00ffcc, 1.8, 50);
+                pointLight.position.set(0, 0, 5);
+                scene.add(pointLight);
+
+                gridContainer = new THREE.Group();
+                gridContainer.rotation.x = 0.15;
+                gridContainer.rotation.y = -0.15;
+                scene.add(gridContainer);
+
+                raycaster = new THREE.Raycaster();
+                mouse = new THREE.Vector2();
+
+                const selectionRingGeom = new THREE.RingGeometry(1.2, 1.3, 16);
+                const selectionRingMat = new THREE.MeshBasicMaterial({ color: 0xff00ff, side: THREE.DoubleSide });
+                selectionRing = new THREE.Mesh(selectionRingGeom, selectionRingMat);
+                selectionRing.visible = false;
+                gridContainer.add(selectionRing);
+
+                buildStars();
+
+                window.addEventListener('resize', onWindowResize);
+                window.addEventListener('mousemove', onMouseMove);
+                window.addEventListener('mousedown', onMouseDown);
+
+                animate();
+            }
+
+
+            // --- GRID DESIGN GENERATORS ---
+
+            function createNodeMesh(term, groupKey) {
+                const group = new THREE.Group();
+                let geom, colorHex = 0xffffff;
+
+                switch(groupKey) {
+                    case 'x': geom = new THREE.IcosahedronGeometry(0.75, 0); colorHex = 0x00ff88; break;
+                    case 'y': geom = new THREE.TorusGeometry(0.55, 0.22, 8, 16); colorHex = 0x00aaff; break;
+                    case 'const': geom = new THREE.BoxGeometry(1.0, 1.0, 1.0); colorHex = 0xff3355; break;
+                    case 'x2': geom = new THREE.ConeGeometry(0.75, 1.3, 4); colorHex = 0xff00ff; break;
+                    case 'xy': geom = new THREE.TorusKnotGeometry(0.4, 0.15, 32, 6); colorHex = 0xffaa00; break;
+                }
+
+                const mesh = new THREE.Mesh(geom, new THREE.MeshPhongMaterial({ color: colorHex, wireframe: true }));
+                group.add(mesh);
+
+                const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: createTextTexture(term, groupKey), transparent: true }));
+                sprite.scale.set(3.2, 1.6, 1);
+                sprite.position.set(0, 0, 0.35); 
+                group.add(sprite);
+
+                return { group, mesh };
+            }
+
+            function createTextTexture(text, groupKey) {
+                const canvas = document.createElement('canvas');
+                canvas.width = 256; canvas.height = 128;
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, 256, 128);
+
+                const helperOpacity = Math.max(0.05, 0.85 - (level - 1) * 0.35);
+
+                let rgb = '10, 10, 30'; 
+                let strokeColor = '#00ffcc';
+                switch (groupKey) {
+                    case 'x': rgb = '0, 255, 136'; strokeColor = '#00ff88'; break;
+                    case 'y': rgb = '0, 170, 255'; strokeColor = '#00aaff'; break;
+                    case 'const': rgb = '255, 51, 85'; strokeColor = '#ff3355'; break;
+                    case 'x2': rgb = '255, 0, 255'; strokeColor = '#ff00ff'; break;
+                    case 'xy': rgb = '255, 170, 0'; strokeColor = '#ffaa00'; break;
+                }
+
+                ctx.fillStyle = `rgba(${rgb}, ${helperOpacity})`;
+                ctx.strokeStyle = strokeColor;
+                ctx.lineWidth = 6;
+                const x = 8, y = 8, w = 240, h = 112, r = 12;
+                ctx.beginPath();
+                ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y);
+                ctx.quadraticCurveTo(x + w, y, x + w, y + r); ctx.lineTo(x + w, y + h - r);
+                ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h); ctx.lineTo(x + r, y + h);
+                ctx.quadraticCurveTo(x, y + h, x, y + h - r); ctx.lineTo(x, y + r);
+                ctx.quadraticCurveTo(x, y, x + r, y);
+                ctx.closePath(); 
+                ctx.fill(); 
+                ctx.stroke();
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 56px Courier New';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 5;
+                ctx.strokeText(text, 128, 64);
+                ctx.fillText(text, 128, 64);
+
+                const texture = new THREE.CanvasTexture(canvas);
+                texture.minFilter = THREE.LinearFilter;
+                return texture;
+            }
+
+            // Build Scrolling Parallax Starfields
+            function buildStars() {
+                if (starfieldSlow) cleanThreeEntity(starfieldSlow);
+                if (starfieldFast) cleanThreeEntity(starfieldFast);
+
+                // Layer 1: Slow Deep Background Stars (Tiny, many)
+                const totalSlow = 600;
+                const geomSlow = new THREE.BufferGeometry();
+                const posSlow = new Float32Array(totalSlow * 3);
+                const colSlow = new Float32Array(totalSlow * 3);
+                for (let i = 0; i < totalSlow * 3; i += 3) {
+                    posSlow[i] = (Math.random() - 0.5) * 180;
+                    posSlow[i+1] = (Math.random() - 0.5) * 120;
+                    posSlow[i+2] = -Math.random() * 250;
+                    colSlow[i] = Math.random() * 0.3;
+                    colSlow[i+1] = Math.random() * 0.8 + 0.2;
+                    colSlow[i+2] = 1.0;
+                }
+                geomSlow.setAttribute('position', new THREE.BufferAttribute(posSlow, 3));
+                geomSlow.setAttribute('color', new THREE.BufferAttribute(colSlow, 3));
+                starfieldSlow = new THREE.Points(geomSlow, new THREE.PointsMaterial({ size: 0.6, vertexColors: true, transparent: true, opacity: 0.8 }));
+                scene.add(starfieldSlow);
+
+                // Layer 2: Fast Foreground Cosmic Stars (Larger, color-shifting warp fields)
+                const totalFast = 200;
+                const geomFast = new THREE.BufferGeometry();
+                const posFast = new Float32Array(totalFast * 3);
+                const colFast = new Float32Array(totalFast * 3);
+                for (let i = 0; i < totalFast * 3; i += 3) {
+                    posFast[i] = (Math.random() - 0.5) * 120;
+                    posFast[i+1] = (Math.random() - 0.5) * 80;
+                    posFast[i+2] = -Math.random() * 200;
+                    
+                    // Hot neon colors (Cyan vs Magenta/Yellow bias)
+                    colFast[i] = Math.random() > 0.5 ? 1.0 : 0.0;
+                    colFast[i+1] = Math.random() > 0.5 ? 1.0 : 0.0;
+                    colFast[i+2] = 1.0;
+                }
+                geomFast.setAttribute('position', new THREE.BufferAttribute(posFast, 3));
+                geomFast.setAttribute('color', new THREE.BufferAttribute(colFast, 3));
+                starfieldFast = new THREE.Points(geomFast, new THREE.PointsMaterial({ size: 1.4, vertexColors: true, transparent: true, opacity: 0.9 }));
+                scene.add(starfieldFast);
+            }
+
+
+            // --- ALGEBRAIC GAMEPLAY CORE ---
+
+            function cleanThreeEntity(obj) {
+                obj.traverse(node => {
+                    if (node.geometry) node.geometry.dispose();
+                    if (node.material) {
+                        if (Array.isArray(node.material)) node.material.forEach(m => { if (m.map) m.map.dispose(); m.dispose(); });
+                        else { if (node.material.map) node.material.map.dispose(); node.material.dispose(); }
+                    }
+                });
+                gridContainer.remove(obj);
+            }
+
+            function resetBoard() {
+                board.forEach(row => row.forEach(node => { if (node) cleanThreeEntity(node.meshGroup); }));
+                board = [];
+
+                if (level === 1) { rows = 5; cols = 5; }
+                else if (level === 2) { rows = 6; cols = 6; }
+                else { rows = 7; cols = 7; }
+
+                const allowedKeys = LEVEL_GROUPS[Math.min(level - 1, LEVEL_GROUPS.length - 1)];
+                camera.position.z = 11 + Math.max(rows, cols) * 1.0;
+
+                for (let r = 0; r < rows; r++) {
+                    board[r] = [];
+                    for (let c = 0; c < cols; c++) {
+                        let groupKey, term, attempts = 0;
+
+                        do {
+                            groupKey = allowedKeys[Math.floor(Math.random() * allowedKeys.length)];
+                            const pool = TERM_GROUPS[groupKey].terms;
+                            term = pool[Math.floor(Math.random() * pool.length)];
+                            attempts++;
+                        } while (wouldCreateMatch(r, c, groupKey) && attempts < 50);
+
+                        const nodeData = createNodeMesh(term, groupKey);
+                        nodeData.group.position.set(calcX(c), calcY(r), 0);
+                        gridContainer.add(nodeData.group);
+
+                        board[r][c] = {
+                            meshGroup: nodeData.group,
+                            innerMesh: nodeData.mesh,
+                            termText: term,
+                            groupKey: groupKey,
+                            gridX: c,
+                            gridY: r,
+                            targetPos: new THREE.Vector3(calcX(c), calcY(r), 0),
+                            tumble: {
+                                x: (Math.random() - 0.5) * 0.02,
+                                y: (Math.random() - 0.5) * 0.02
+                            }
+                        };
+                    }
+                }
+                
+                selectedNode = null;
+                selectionRing.visible = false;
+                boardState = "READY";
+            }
+
+            function calcX(c) { return (c - (cols - 1) / 2) * nodeSpacing; }
+            function calcY(r) { return (r - (rows - 1) / 2) * nodeSpacing; }
+
+            function wouldCreateMatch(r, c, groupKey) {
+                if (c >= 2 && board[r][c-1]?.groupKey === groupKey && board[r][c-2]?.groupKey === groupKey) return true;
+                if (r >= 2 && board[r-1][c]?.groupKey === groupKey && board[r-2][c]?.groupKey === groupKey) return true;
+                return false;
+            }
+
+
+            // --- SWAP MECHANICS & STATE MACHINE ---
+
+            function executeSwap(nodeA, nodeB, triggerFallBack = false) {
+                boardState = "SWAPPING";
+                animationTimer = 0;
+                animationSwapPair = [nodeA, nodeB, triggerFallBack];
+
+                const rA = nodeA.gridY, cA = nodeA.gridX;
+                const rB = nodeB.gridY, cB = nodeB.gridX;
+
+                board[rA][cA] = nodeB;
+                board[rB][cB] = nodeA;
+
+                nodeA.gridX = cB; nodeA.gridY = rB;
+                nodeB.gridX = cA; nodeB.gridY = rA;
+
+                nodeA.targetPos.set(calcX(cB), calcY(rB), 0);
+                nodeB.targetPos.set(calcX(cA), calcY(rA), 0);
+
+                if (!triggerFallBack) {
+                    stats.totalSwaps++;
+                }
+            }
+
+            function evaluateMatches() {
+                let toDestroy = new Set();
+                let matchDataList = []; 
+
+                for (let r = 0; r < rows; r++) {
+                    let matchLen = 1;
+                    for (let c = 1; c <= cols; c++) {
+                        if (c < cols && board[r][c]?.groupKey === board[r][c-1]?.groupKey) {
+                            matchLen++;
+                        } else {
+                            if (matchLen >= 3) {
+                                let matchGroup = [];
+                                for (let i = c - matchLen; i < c; i++) {
+                                    toDestroy.add(board[r][i]);
+                                    matchGroup.push(board[r][i]);
+                                }
+                                matchDataList.push({ groupKey: board[r][c-1].groupKey, nodes: matchGroup });
+                            }
+                            matchLen = 1;
+                        }
+                    }
+                }
+
+                for (let c = 0; c < cols; c++) {
+                    let matchLen = 1;
+                    for (let r = 1; r <= rows; r++) {
+                        if (r < rows && board[r][c]?.groupKey === board[r-1][c]?.groupKey) {
+                            matchLen++;
+                        } else {
+                            if (matchLen >= 3) {
+                                let matchGroup = [];
+                                for (let i = r - matchLen; i < r; i++) {
+                                    toDestroy.add(board[i][c]);
+                                    matchGroup.push(board[i][c]);
+                                }
+                                matchDataList.push({ groupKey: board[r-1][c].groupKey, nodes: matchGroup });
+                            }
+                            matchLen = 1;
+                        }
+                    }
+                }
+
+                if (toDestroy.size > 0) {
+                    boardState = "RESOLVING";
+                    
+                    matchDataList.forEach(matchData => {
+                        let sum = 0;
+                        let prPart = '';
+                        matchData.nodes.forEach(node => {
+                            const parsed = parseAlgebraTerm(node.termText, node.groupKey);
+                            sum += parsed.numericCoeff;
+                            if (parsed.pronumeral !== 'None') prPart = parsed.pronumeral;
+                        });
+
+                        let compiledStr = '';
+                        if (matchData.groupKey === 'const') {
+                            compiledStr = `${parseFloat(sum.toFixed(1))}`;
+                        } else {
+                            const cleanSum = parseFloat(sum.toFixed(1));
+                            if (cleanSum === 1) compiledStr = prPart;
+                            else if (cleanSum === -1) compiledStr = `-${prPart}`;
+                            else compiledStr = `${cleanSum}${prPart}`;
+                        }
+
+                        const popPos = matchData.nodes[0].meshGroup.position.clone();
+                        create3DPopup(popPos, `COMBINED TO: ${compiledStr}!`, "#00ffcc");
+                        addLog(`SIMPLIFIED: Combined matching terms into: ${compiledStr}`);
+                    });
+
+                    playMatch();
+
+                    toDestroy.forEach(node => {
+                        score++;
+                        stats.matchesMade++;
+                        generateBurst(node.meshGroup.position, 0x00ffcc, 15);
+                        cleanThreeEntity(node.meshGroup);
+                        board[node.gridY][node.gridX] = null;
+                    });
+
+                    timeLeft = Math.min(maxTime, timeLeft + 4);
+                    updateTimeIndicator();
+
+                    pulseScoreboard();
+                    scoreVal.textContent = score;
+
+                    checkMilestoneFeats();
+
+                    if (score >= level * 10) {
+                        level++;
+                        levelVal.textContent = level;
+                        updateGridScaffoldingColors(); 
+                    }
+
+                    setTimeout(shiftGridDown, 400);
+                } else {
+                    boardState = "READY";
+                }
+            }
+
+            function pulseScoreboard() {
+                const containerEl = document.getElementById('score-val-container');
+                if (!containerEl) return;
+                containerEl.style.transform = 'scale(1.28)';
+                containerEl.style.color = '#ffff00';
+                setTimeout(() => {
+                    containerEl.style.transform = 'scale(1.0)';
+                    containerEl.style.color = '#00ffcc';
+                }, 220);
+            }
+
+            function checkMilestoneFeats() {
+                let milestoneTitle = "";
+                if (score === 10) milestoneTitle = "EQUATION BALANCED!";
+                else if (score === 20) milestoneTitle = "ALGEBRAIC MASTERY!";
+                else if (score === 30) milestoneTitle = "PEMDAS CHAMPION!";
+                else if (score === 40) milestoneTitle = "EULER'S FAVORITE!";
+                else if (score === 50) milestoneTitle = "MATRIX OVERLORD!";
+
+                if (milestoneTitle !== "") {
+                    create3DPopup(new THREE.Vector3(0, 0, 1), milestoneTitle, "#ff00ff");
+                    addLog(`FEAT ACHIEVED: ${milestoneTitle}`);
+                }
+            }
+
+            function updateGridScaffoldingColors() {
+                const currentOpacityPercent = Math.max(5, Math.round((0.85 - (level - 1) * 0.35) * 100));
+                addLog(`MATRIX SHIFT Stage ${level}: Scaffolding assist diminished to ${currentOpacityPercent}% opacity!`);
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        const node = board[r][c];
+                        if (node) {
+                            const sprite = node.meshGroup.children[1];
+                            if (sprite.material.map) sprite.material.map.dispose();
+                            sprite.material.map = createTextTexture(node.termText, node.groupKey);
+                            sprite.material.needsUpdate = true;
+                        }
+                    }
+                }
+            }
+
+            function shiftGridDown() {
+                boardState = "FALLING";
+                const allowedKeys = LEVEL_GROUPS[Math.min(level - 1, LEVEL_GROUPS.length - 1)];
+
+                for (let c = 0; c < cols; c++) {
+                    let emptySpaces = 0;
+                    for (let r = 0; r < rows; r++) {
+                        if (board[r][c] === null) {
+                            emptySpaces++;
+                        } else if (emptySpaces > 0) {
+                            const node = board[r][c];
+                            board[r - emptySpaces][c] = node;
+                            board[r][c] = null;
+                            node.gridY = r - emptySpaces;
+                            node.targetPos.set(calcX(c), calcY(node.gridY), 0);
+                        }
+                    }
+
+                    for (let i = 0; i < emptySpaces; i++) {
+                        const targetRow = rows - emptySpaces + i;
+                        const groupKey = allowedKeys[Math.floor(Math.random() * allowedKeys.length)];
+                        const pool = TERM_GROUPS[groupKey].terms;
+                        const term = pool[Math.floor(Math.random() * pool.length)];
+
+                        const nodeData = createNodeMesh(term, groupKey);
+                        nodeData.group.position.set(calcX(c), calcY(rows + i + 1), 0);
+                        gridContainer.add(nodeData.group);
+
+                        board[targetRow][c] = {
+                            meshGroup: nodeData.group,
+                            innerMesh: nodeData.mesh,
+                            termText: term,
+                            groupKey: groupKey,
+                            gridX: c,
+                            gridY: targetRow,
+                            targetPos: new THREE.Vector3(calcX(c), calcY(targetRow), 0),
+                            tumble: {
+                                x: (Math.random() - 0.5) * 0.02,
+                                y: (Math.random() - 0.5) * 0.02
+                            }
+                        };
+                    }
+                }
+
+                setTimeout(() => {
+                    evaluateMatches();
+                }, 400);
+            }
+
+
+            // --- GRAPHICAL UPDATES & RENDER ---
+
+            function updateMeshPositions() {
+                if (!gameActive || board.length === 0) return;
+
+                const lerpFactor = 0.18;
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        const node = board[r][c];
+                        if (node) {
+                            node.meshGroup.position.lerp(node.targetPos, lerpFactor);
+                            node.innerMesh.rotation.x += node.tumble?.x || 0.01;
+                            node.innerMesh.rotation.y += node.tumble?.y || 0.01;
+                        }
+                    }
+                }
+
+                if (boardState === "SWAPPING") {
+                    animationTimer += 0.08;
+                    if (animationTimer >= 1.0) {
+                        const nodeA = animationSwapPair[0];
+                        const nodeB = animationSwapPair[1];
+                        const fallbackTriggered = animationSwapPair[2];
+
+                        nodeA.meshGroup.position.copy(nodeA.targetPos);
+                        nodeB.meshGroup.position.copy(nodeB.targetPos);
+
+                        if (fallbackTriggered) {
+                            boardState = "READY";
+                        } else {
+                            let matched = false;
+                            
+                            for (let r = 0; r < rows; r++) {
+                                for (let c = 0; c < cols; c++) {
+                                    const gk = board[r][c]?.groupKey;
+                                    if (gk) {
+                                        if (c >= 2 && board[r][c-1]?.groupKey === gk && board[r][c-2]?.groupKey === gk) matched = true;
+                                        if (r >= 2 && board[r-1][c]?.groupKey === gk && board[r-2][c]?.groupKey === gk) matched = true;
+                                    }
+                                }
+                            }
+
+                            if (matched) {
+                                evaluateMatches();
+                            } else {
+                                stats.violations++;
+                                playDissonance();
+                                shakeCamera(1.2);
+
+                                shield = Math.max(0, shield - 15);
+                                timeLeft = Math.max(0, timeLeft - 8);
+
+                                updateShieldBar();
+                                updateTimeIndicator();
+                                addLog(`VIOLATION: "${nodeA.termText}" is unlike "${nodeB.termText}"! Penalty applied.`);
+
+                                if (shield <= 0 || timeLeft <= 0) {
+                                    triggerGameOver();
+                                } else {
+                                    executeSwap(nodeA, nodeB, true);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            function updateUrgencyTimer(dt) {
+                if (!gameActive || boardState !== "READY") return;
+
+                timeLeft = Math.max(0, timeLeft - dt);
+                updateTimeIndicator();
+
+                if (timeLeft <= 0) {
+                    addLog("TIME PARADOX! Stability collapsed.");
+                    triggerGameOver();
+                }
+            }
+
+            function updateTimeIndicator() {
+                const percent = (timeLeft / maxTime) * 100;
+                timeBar.style.width = percent + '%';
+                timeVal.textContent = Math.ceil(timeLeft);
+
+                if (timeLeft < 15) {
+                    timeBar.style.background = '#ff0055';
+                    timeBar.style.boxShadow = '0 0 12px #ff0055';
+                } else {
+                    timeBar.style.background = '#ffaa00';
+                    timeBar.style.boxShadow = '0 0 10px #ffaa00';
+                }
+            }
+
+            // Real-Time Parallax Starfield Warp Scroller
+            function updateStars(dt) {
+                if (!starfieldSlow || !starfieldFast) return;
+
+                // Base translation speed scales up dynamically with level Stage!
+                const slowSpeed = (12 + level * 8) * dt;
+                const fastSpeed = (30 + level * 20) * dt;
+
+                // Update deep background layer
+                const posSlowAttr = starfieldSlow.geometry.attributes.position;
+                const arrSlow = posSlowAttr.array;
+                for (let i = 0; i < arrSlow.length; i += 3) {
+                    arrSlow[i+2] += slowSpeed;
+                    // Reset single point if it flies behind player camera bounds
+                    if (arrSlow[i+2] > 15) {
+                        arrSlow[i] = (Math.random() - 0.5) * 180;
+                        arrSlow[i+1] = (Math.random() - 0.5) * 120;
+                        arrSlow[i+2] = -250;
+                    }
+                }
+                posSlowAttr.needsUpdate = true;
+
+                // Update close foreground layer
+                const posFastAttr = starfieldFast.geometry.attributes.position;
+                const arrFast = posFastAttr.array;
+                for (let i = 0; i < arrFast.length; i += 3) {
+                    arrFast[i+2] += fastSpeed;
+                    if (arrFast[i+2] > 15) {
+                        arrFast[i] = (Math.random() - 0.5) * 120;
+                        arrFast[i+1] = (Math.random() - 0.5) * 80;
+                        arrFast[i+2] = -200;
+                    }
+                }
+                posFastAttr.needsUpdate = true;
+
+                // Rotational complexity shifts over levels (Turbulence)
+                starfieldSlow.rotation.z += (0.01 + level * 0.01) * dt;
+                starfieldFast.rotation.z -= (0.02 + level * 0.015) * dt;
+            }
+
+            function animate() {
+                requestAnimationFrame(animate);
+
+                const currentFrameTime = performance.now();
+                const dt = (currentFrameTime - lastFrameTime) / 1000;
+                lastFrameTime = currentFrameTime;
+
+                // Starfields scroll regardless of active match-states to maintain constant spatial visual flow
+                updateStars(dt);
+
+                if (gameActive) {
+                    updateUrgencyTimer(dt);
+                    updateMeshPositions();
+                    updateParticles();
+                    updateFloatingTexts();
+                }
+
+                if (selectedNode && boardState === "READY" && selectionRing) {
+                    selectionRing.visible = true;
+                    selectionRing.position.copy(selectedNode.meshGroup.position);
+                    selectionRing.rotation.z += 0.03;
+                } else if (selectionRing) {
+                    selectionRing.visible = false;
+                }
+
+                if (shakeIntensity > 0) {
+                    camera.position.x = (Math.random() - 0.5) * shakeIntensity;
+                    camera.position.y = (Math.random() - 0.5) * shakeIntensity;
+                    shakeIntensity *= 0.88;
+                } else {
+                    camera.position.x = 0; camera.position.y = 0;
+                }
+
+                renderer.render(scene, camera);
+            }
+
+
+            // --- INTERACTIVE RAYCASTERS ---
+
+            function onMouseMove(event) {
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+                if (boardState !== "READY" || !gameActive) return;
+
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(gridContainer.children, true);
+
+                let foundNode = null;
+                if (intersects.length > 0) {
+                    let obj = intersects[0].object;
+                    while (obj && obj.parent !== gridContainer) {
+                        obj = obj.parent;
+                    }
+                    if (obj) {
+                        foundNode = findNodeByMesh(obj);
+                    }
+                }
+
+                if (foundNode) {
+                    if (currentHoveredNode !== foundNode) {
+                        currentHoveredNode = foundNode;
+                        updateScannerUI(foundNode);
+                    }
+                }
+            }
+
+            function onMouseDown(event) {
+                if (event.button !== 0) return; 
+                if (boardState !== "READY" || !gameActive) return;
+
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(gridContainer.children, true);
+
+                if (intersects.length > 0) {
+                    let obj = intersects[0].object;
+                    while (obj && obj.parent !== gridContainer) {
+                        obj = obj.parent;
+                    }
+                    const clickedNode = findNodeByMesh(obj);
+
+                    if (clickedNode) {
+                        playTick();
+                        if (selectedNode === null) {
+                            selectedNode = clickedNode;
+                        } else {
+                            const dist = Math.abs(selectedNode.gridX - clickedNode.gridX) + Math.abs(selectedNode.gridY - clickedNode.gridY);
+                            if (dist === 1) {
+                                executeSwap(selectedNode, clickedNode);
+                                selectedNode = null;
+                            } else {
+                                selectedNode = clickedNode;
+                            }
+                        }
+                    }
+                }
+            }
+
+            function findNodeByMesh(meshGroup) {
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        if (board[r][c]?.meshGroup === meshGroup) return board[r][c];
+                    }
+                }
+                return null;
+            }
+
+
+            // --- GAME LOGS & UI FEEDBACK ---
+
+            function updateScannerUI(node) {
+                const parsed = parseAlgebraTerm(node.termText, node.groupKey);
+                document.getElementById('scan-term').textContent = node.termText;
+                document.getElementById('scan-type').textContent = parsed.type;
+                document.getElementById('scan-coeff').textContent = parsed.coefficient;
+                document.getElementById('scan-pr').textContent = parsed.pronumeral;
+            }
+
+            function updateShieldBar() {
+                shieldBar.style.width = shield + '%';
+                shieldVal.textContent = shield;
+                shieldBar.style.background = shield < 40 ? '#ff0055' : '#00ffcc';
+            }
+
+            function addLog(msg) {
+                const logPanel = document.getElementById('log-panel');
+                if (!logPanel) return;
+                const entry = document.createElement('div');
+                entry.className = 'log-entry';
+                entry.textContent = `> ${msg}`;
+                logPanel.appendChild(entry);
+                while (logPanel.children.length > 6) {
+                    logPanel.removeChild(logPanel.firstChild);
+                }
+            }
+
+            function generateBurst(pos, color, count = 15) {
+                const geom = new THREE.BufferGeometry();
+                const positions = new Float32Array(count * 3);
+                const dirs = [];
+                for (let i = 0; i < count; i++) {
+                    positions[i*3] = pos.x; positions[i*3+1] = pos.y; positions[i*3+2] = pos.z;
+                    dirs.push({ x: (Math.random()-0.5)*0.5, y: (Math.random()-0.5)*0.5, z: (Math.random()-0.5)*0.5 });
+                }
+                geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                const points = new THREE.Points(geom, new THREE.PointsMaterial({ size: 0.5, color: color, transparent: true, blending: THREE.AdditiveBlending }));
+                gridContainer.add(points);
+                particles.push({ points: points, directions: dirs, age: 0, maxAge: 25 });
+            }
+
+            function create3DPopup(pos, text, color) {
+                const canvas = document.createElement('canvas');
+                canvas.width = 512; canvas.height = 128;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = color; ctx.font = 'bold 32px Courier New';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(text, 256, 64);
+                
+                const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas), transparent: true }));
+                sprite.scale.set(5.5, 1.37, 1);
+                sprite.position.copy(pos); sprite.position.y += 1.5;
+                gridContainer.add(sprite);
+                floatingTexts.push({ sprite: sprite, age: 0, maxAge: 65 });
+            }
+
+            function updateParticles() {
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    const p = particles[i]; p.age++;
+                    const attr = p.points.geometry.attributes.position;
+                    const arr = attr.array;
+                    for (let j = 0; j < arr.length/3; j++) {
+                        arr[j*3] += p.directions[j].x;
+                        arr[j*3+1] += p.directions[j].y;
+                        arr[j*3+2] += p.directions[j].z;
+                    }
+                    attr.needsUpdate = true;
+                    p.points.material.opacity = 1.0 - (p.age / p.maxAge);
+                    if (p.age >= p.maxAge) { cleanThreeEntity(p.points); particles.splice(i, 1); }
+                }
+            }
+
+            function updateFloatingTexts() {
+                for (let i = floatingTexts.length - 1; i >= 0; i--) {
+                    const t = floatingTexts[i]; t.age++;
+                    t.sprite.position.y += 0.045;
+                    t.sprite.material.opacity = 1.0 - (t.age / t.maxAge);
+                    if (t.age >= t.maxAge) { cleanThreeEntity(t.sprite); floatingTexts.splice(i, 1); }
+                }
+            }
+
+            function shakeCamera(mag) {
+                shakeIntensity = Math.max(shakeIntensity, mag);
+            }
+
+            function triggerGameOver() {
+                gameActive = false;
+                document.getElementById('hud').style.display = 'none';
+                
+                const accuracy = stats.totalSwaps > 0 ? Math.round((stats.matchesMade / stats.totalSwaps) * 100) : 100;
+                
+                document.getElementById('stat-level').textContent = level;
+                document.getElementById('stat-matches').textContent = stats.matchesMade;
+                document.getElementById('stat-violations').textContent = stats.violations;
+                document.getElementById('stat-accuracy').textContent = accuracy + "%";
+
+                document.getElementById('game-over-screen').style.display = 'flex';
+                document.getElementById('final-score').textContent = score;
+            }
+
+            function onWindowResize() {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+
+
+            // --- HUD CONTROLS ---
+
+            document.getElementById('start-btn').addEventListener('click', () => {
+                initAudio();
+                document.getElementById('start-screen').style.display = 'none';
+                document.getElementById('hud').style.display = 'flex';
+                resetSimulation();
+            });
+
+            document.getElementById('restart-btn').addEventListener('click', () => {
+                document.getElementById('game-over-screen').style.display = 'none';
+                document.getElementById('hud').style.display = 'flex';
+                resetSimulation();
+            });
+
+            function resetSimulation() {
+                score = 0; level = 1; shield = 100; timeLeft = 60; gameActive = true;
+                
+                stats.matchesMade = 0;
+                stats.violations = 0;
+                stats.totalSwaps = 0;
+                stats.accuracy = 100;
+
+                scoreVal.textContent = "0";
+                levelVal.textContent = "1";
+                updateShieldBar();
+                updateTimeIndicator();
+                lastFrameTime = performance.now();
+
+                const logPanel = document.getElementById('log-panel');
+                if (logPanel) logPanel.innerHTML = "";
+                addLog("ALIGNING SIMPLIFICATION ALGORITHMS...");
+                addLog("COORDINATE GRID STABLE.");
+
+                buildStars(); // Re-seed starfields to clean active rotations
+                resetBoard();
+            }
+
+            init();
+        });
+    </script>
+</body>
+</html>
