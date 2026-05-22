@@ -311,11 +311,73 @@
             font-size: 12px;
             color: #666;
         }
+
+        /* Full-screen educational flash message */
+        .flash-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 40;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease-in;
+            text-align: center;
+            padding: 40px;
+            box-sizing: border-box;
+        }
+
+        .flash-overlay.visible {
+            opacity: 1;
+        }
+
+        .flash-overlay.match-flash {
+            background: radial-gradient(ellipse at center, rgba(0, 255, 204, 0.25) 0%, rgba(2, 2, 8, 0.85) 70%);
+        }
+
+        .flash-overlay.error-flash {
+            background: radial-gradient(ellipse at center, rgba(255, 0, 85, 0.3) 0%, rgba(2, 2, 8, 0.85) 70%);
+        }
+
+        .flash-title {
+            font-size: 42px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            text-shadow: 0 0 30px currentColor;
+        }
+
+        .flash-explain {
+            font-size: 18px;
+            max-width: 700px;
+            line-height: 1.5;
+            color: #fff;
+            opacity: 0.95;
+        }
+
+        .flash-detail {
+            font-size: 14px;
+            margin-top: 10px;
+            color: #aaa;
+            max-width: 600px;
+            line-height: 1.4;
+        }
     </style>
 </head>
 <body>
 
     <div id="canvas-container"></div>
+
+    <!-- Educational Flash Overlay -->
+    <div class="flash-overlay" id="flash-overlay">
+        <div class="flash-title" id="flash-title"></div>
+        <div class="flash-explain" id="flash-explain"></div>
+        <div class="flash-detail" id="flash-detail"></div>
+    </div>
 
     <!-- HUD Overlay -->
     <div class="hud" id="hud" style="display: none;">
@@ -647,7 +709,7 @@
                     geom = new THREE.OctahedronGeometry(0.75, 0);
                     colorHex = 0xff1144; // Spiky Anomaly Red
                 } else {
-                    if (level >= 3) {
+                    if (level >= 7) {
                         geom = new THREE.SphereGeometry(0.7, 12, 12); // All blocks look identical
                         colorHex = 0x888888; // Uniform neutral gray
                     } else {
@@ -659,8 +721,10 @@
                             case 'x2': baseColor.setHex(0xff00ff); break;
                             case 'xy': baseColor.setHex(0xffaa00); break;
                         }
-                        if (level === 2) {
-                            baseColor.lerp(new THREE.Color(0x888888), 0.65);
+                        // Gradually lerp color toward gray as levels increase
+                        const fadeAmount = Math.min(0.85, (level - 1) * 0.14);
+                        if (fadeAmount > 0) {
+                            baseColor.lerp(new THREE.Color(0x888888), fadeAmount);
                         }
                         colorHex = baseColor.getHex();
 
@@ -691,7 +755,7 @@
                 const ctx = canvas.getContext('2d');
                 ctx.clearRect(0, 0, 256, 128);
 
-                let helperOpacity = Math.max(0.0, 0.85 - (level - 1) * 0.45);
+                let helperOpacity = Math.max(0.05, 0.85 - (level - 1) * 0.12);
                 if (specialType === "BOMB" || specialType === "TRAP") {
                     helperOpacity = 0.9; 
                 }
@@ -711,8 +775,8 @@
                         case 'x2': rgb = '255, 0, 255'; strokeColor = '#ff00ff'; break;
                         case 'xy': rgb = '255, 170, 0'; strokeColor = '#ffaa00'; break;
                     }
-                    if (level >= 3) {
-                        strokeColor = '#888888'; 
+                    if (level >= 7) {
+                        strokeColor = '#888888';
                     }
                 }
 
@@ -997,6 +1061,18 @@
 
                     playMatch();
 
+                    // Show educational flash for the first match group
+                    if (matchDataList.length > 0) {
+                        const firstMatch = matchDataList[0];
+                        const groupLabel = TERM_GROUPS[firstMatch.groupKey]?.label || firstMatch.groupKey;
+                        const terms = firstMatch.nodes.map(n => n.termText).join(', ');
+                        showFlash('match',
+                            'LIKE TERMS MATCHED!',
+                            `"${terms}" are all like terms because they share the same pronumeral.`,
+                            `Like terms have identical variables with identical powers. The coefficients (numbers in front) don't matter for matching!`
+                        );
+                    }
+
                     // Apply combo points multiplier
                     const pointsAdded = toDestroy.size * 100 * comboMultiplier;
                     score += pointsAdded;
@@ -1091,7 +1167,7 @@
             }
 
             function updateGridScaffoldingColors() {
-                const currentOpacityPercent = Math.max(5, Math.round((0.85 - (level - 1) * 0.45) * 100));
+                const currentOpacityPercent = Math.max(5, Math.round((0.85 - (level - 1) * 0.12) * 100));
                 addLog(`MATRIX SHIFT Stage ${level}: Scaffolding assist diminished to ${currentOpacityPercent}% opacity!`);
                 for (let r = 0; r < rows; r++) {
                     for (let c = 0; c < cols; c++) {
@@ -1246,6 +1322,21 @@
                                     updateShieldBar();
                                     updateTimeIndicator();
                                     addLog(`VIOLATION: "${nodeA.termText}" is unlike "${nodeB.termText}"! Penalty applied.`);
+
+                                    // Educational flash explaining WHY this was wrong
+                                    const parsedA = parseAlgebraTerm(nodeA.termText, nodeA.groupKey);
+                                    const parsedB = parseAlgebraTerm(nodeB.termText, nodeB.groupKey);
+                                    let reason = `"${nodeA.termText}" has pronumeral "${parsedA.pronumeral}" but "${nodeB.termText}" has pronumeral "${parsedB.pronumeral}".`;
+                                    if (parsedA.pronumeral === 'None' && parsedB.pronumeral !== 'None') {
+                                        reason = `"${nodeA.termText}" is a constant (no variable), but "${nodeB.termText}" contains the variable "${parsedB.pronumeral}".`;
+                                    } else if (parsedB.pronumeral === 'None' && parsedA.pronumeral !== 'None') {
+                                        reason = `"${nodeB.termText}" is a constant (no variable), but "${nodeA.termText}" contains the variable "${parsedA.pronumeral}".`;
+                                    }
+                                    showFlash('error',
+                                        'NOT LIKE TERMS!',
+                                        reason,
+                                        'Only terms with the EXACT same variable and power can be combined. Coefficients (the numbers) do not matter.'
+                                    );
 
                                     if (shield <= 0 || timeLeft <= 0) {
                                         triggerGameOver();
@@ -1561,6 +1652,32 @@
                 }
             }
 
+            // --- FULL-SCREEN EDUCATIONAL FLASH MESSAGES ---
+            let flashTimeout = null;
+            let flashCount = 0; // Track how many flashes shown to fade them out over time
+
+            function showFlash(type, title, explain, detail) {
+                // After 6 flashes, stop showing them (player has learned)
+                if (flashCount > 6) return;
+                flashCount++;
+
+                const overlay = document.getElementById('flash-overlay');
+                const titleEl = document.getElementById('flash-title');
+                const explainEl = document.getElementById('flash-explain');
+                const detailEl = document.getElementById('flash-detail');
+
+                overlay.className = 'flash-overlay visible ' + (type === 'match' ? 'match-flash' : 'error-flash');
+                titleEl.style.color = type === 'match' ? '#00ffcc' : '#ff0055';
+                titleEl.textContent = title;
+                explainEl.textContent = explain;
+                detailEl.textContent = detail || '';
+
+                if (flashTimeout) clearTimeout(flashTimeout);
+                flashTimeout = setTimeout(() => {
+                    overlay.classList.remove('visible');
+                }, 2800);
+            }
+
             function generateBurst(pos, color, count = 15, animType = "SPIRAL") {
                 const geom = new THREE.BufferGeometry();
                 const positions = new Float32Array(count * 3);
@@ -1694,6 +1811,7 @@
                 comboMultiplier = 1;
                 warpBoost = 1.0;
                 idleTimer = 0.0;
+                flashCount = 0;
 
                 scoreVal.textContent = "0";
                 levelVal.textContent = "1";
