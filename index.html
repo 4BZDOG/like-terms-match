@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ALGEBRA CRUSH: COSMIC WARP</title>
+    <title>Like Terms Match</title>
     <style>
         body, html {
             margin: 0;
@@ -30,139 +30,170 @@
         .hud {
             position: absolute;
             z-index: 10;
-            pointer-events: none; /* Let clicks pass to 3D grid by default */
-            padding: 20px;
+            pointer-events: none;
+            padding: 16px;
             box-sizing: border-box;
             display: flex;
             flex-direction: row;
             justify-content: space-between;
+            align-items: stretch;
             width: 100%;
             height: 100%;
         }
 
-        .hud-top {
-            display: flex;
-            width: 100%;
-            gap: 15px;
-        }
-
         /* Highly translucent default state with transitions */
         .hud-panel {
-            background: rgba(2, 2, 8, 0.4); 
-            border: 2px solid #00ffcc;
-            box-shadow: 0 0 15px rgba(0, 255, 204, 0.15);
-            padding: 12px 18px;
-            border-radius: 6px;
-            pointer-events: auto; /* Capture pointer for hovers, block background 3D clicks */
-            transition: 
-                background-color 0.25s cubic-bezier(0.25, 1, 0.5, 1), 
-                transform 0.25s cubic-bezier(0.25, 1, 0.5, 1), 
-                box-shadow 0.25s cubic-bezier(0.25, 1, 0.5, 1), 
-                border-color 0.25s cubic-bezier(0.25, 1, 0.5, 1);
-            transform-origin: left top;
+            background: rgba(2, 2, 8, 0.55);
+            border: 1px solid rgba(0, 255, 204, 0.6);
+            box-shadow: 0 0 12px rgba(0, 255, 204, 0.1);
+            padding: 14px 16px;
+            border-radius: 8px;
+            pointer-events: auto;
+            transition:
+                background-color 0.3s ease,
+                box-shadow 0.3s ease,
+                border-color 0.3s ease;
         }
 
-        /* Hover: Less translucent (more opaque), enlarged, and enhanced glow */
         .hud-panel:hover {
-            background: rgba(2, 2, 8, 0.96); 
-            transform: scale(1.05); 
-            box-shadow: 0 0 25px rgba(0, 255, 204, 0.45);
-            z-index: 20;
+            background: rgba(2, 2, 8, 0.92);
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.35);
+            border-color: #00ffcc;
         }
 
-        /* Minimal Status Column on Left */
+        /* Left Sidebar */
         .left-sidebar {
             display: flex;
             flex-direction: column;
-            gap: 15px;
-            width: 250px;
+            gap: 12px;
+            width: 240px;
+            justify-content: flex-start;
         }
 
         .score-board {
             text-align: left;
-            border-color: #ff00ff;
-            box-shadow: 0 0 15px rgba(255, 0, 255, 0.15);
+            border-color: rgba(255, 0, 255, 0.6);
+            box-shadow: 0 0 12px rgba(255, 0, 255, 0.1);
         }
 
         .score-board:hover {
             border-color: #ff00ff;
-            box-shadow: 0 0 25px rgba(255, 0, 255, 0.45);
+            box-shadow: 0 0 20px rgba(255, 0, 255, 0.35);
+        }
+
+        .score-label {
+            font-size: 11px;
+            color: #ff00ff;
+            letter-spacing: 1.5px;
+            font-weight: bold;
+            margin-bottom: 4px;
+            text-transform: uppercase;
         }
 
         #score-val-container {
-            font-size: 38px;
+            font-size: 36px;
             font-weight: bold;
             color: #00ffcc;
-            text-shadow: 0 0 15px #00ffcc;
+            text-shadow: 0 0 12px rgba(0, 255, 204, 0.6);
             transition: transform 0.15s ease-out, color 0.15s;
             display: inline-block;
+            margin: 4px 0;
+        }
+
+        .level-label {
+            font-size: 12px;
+            color: #999;
+            margin-top: 2px;
+        }
+
+        .level-label span {
+            color: #ff00ff;
+            font-weight: bold;
         }
 
         .stats {
-            font-size: 13px;
-            line-height: 1.4;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .stat-label {
+            color: #aaa;
+            margin-bottom: 2px;
+        }
+
+        .stat-label span {
+            color: #fff;
+            font-weight: bold;
         }
 
         .bar-container {
             width: 100%;
-            height: 10px;
-            background: #111;
-            border: 1px solid #00ffcc;
-            margin-top: 3px;
-            margin-bottom: 8px;
+            height: 8px;
+            background: rgba(17, 17, 17, 0.8);
+            border: 1px solid rgba(0, 255, 204, 0.4);
+            border-radius: 4px;
+            margin-top: 4px;
+            margin-bottom: 12px;
             position: relative;
+            overflow: hidden;
         }
 
         .bar-fill {
             width: 100%;
             height: 100%;
             background: #00ffcc;
-            transition: width 0.15s ease-out;
-            box-shadow: 0 0 10px #00ffcc;
+            transition: width 0.2s ease-out;
+            box-shadow: 0 0 8px #00ffcc;
+            border-radius: 3px;
         }
 
         #time-bar {
             background: #ffaa00;
-            box-shadow: 0 0 10px #ffaa00;
+            box-shadow: 0 0 8px #ffaa00;
         }
 
         .time-container {
-            border-color: #ffaa00;
+            border-color: rgba(255, 170, 0, 0.4);
         }
 
-        /* Realtime Hover Block Scanner (Moved to Bottom Right) */
+        /* Right Sidebar - Scanner */
         .right-sidebar {
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
-            width: 280px;
+            width: 260px;
         }
 
         .scanner-panel {
-            border-color: #ffaa00;
-            box-shadow: 0 0 15px rgba(255, 170, 0, 0.15);
+            border-color: rgba(255, 170, 0, 0.6);
+            box-shadow: 0 0 12px rgba(255, 170, 0, 0.1);
             text-align: left;
-            transform-origin: right bottom;
         }
 
         .scanner-panel:hover {
             border-color: #ffaa00;
-            box-shadow: 0 0 25px rgba(255, 170, 0, 0.4);
+            box-shadow: 0 0 20px rgba(255, 170, 0, 0.3);
         }
 
         .scanner-header {
-            font-size: 11px;
+            font-size: 10px;
             color: #ffaa00;
             text-align: center;
-            border-bottom: 1px dashed #ffaa00;
-            padding-bottom: 4px;
-            margin-bottom: 8px;
+            letter-spacing: 1.5px;
+            border-bottom: 1px solid rgba(255, 170, 0, 0.3);
+            padding-bottom: 6px;
+            margin-bottom: 10px;
             font-weight: bold;
+            text-transform: uppercase;
         }
 
         .scanner-data {
             font-size: 12px;
-            line-height: 1.5;
+            line-height: 1.8;
+        }
+
+        .scanner-data div {
+            color: #999;
         }
 
         .scanner-data span {
@@ -172,34 +203,52 @@
 
         .scanner-info {
             font-size: 11px;
-            color: #888;
-            margin-top: 6px;
-            border-top: 1px solid #222;
-            padding-top: 4px;
+            color: #666;
+            margin-top: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding-top: 6px;
+            line-height: 1.4;
         }
 
         /* Logs */
         .log-panel {
-            width: 440px;
-            height: 110px;
+            width: 100%;
+            height: 100px;
             font-size: 11px;
             overflow: hidden;
             color: #ffaa00;
-            border-color: #ffaa00;
-            box-shadow: 0 0 15px rgba(255, 170, 0, 0.1);
+            border-color: rgba(255, 170, 0, 0.4);
+            box-shadow: 0 0 10px rgba(255, 170, 0, 0.08);
             display: flex;
             flex-direction: column-reverse;
             pointer-events: auto;
-            align-self: flex-end;
+            margin-top: auto;
         }
 
         .log-panel:hover {
-            box-shadow: 0 0 25px rgba(255, 170, 0, 0.25);
+            box-shadow: 0 0 18px rgba(255, 170, 0, 0.2);
+            border-color: #ffaa00;
         }
 
         .log-entry {
-            margin-bottom: 4px;
-            line-height: 1.3;
+            margin-bottom: 5px;
+            line-height: 1.4;
+            padding: 0 2px;
+        }
+
+        /* Powerup indicator */
+        .powerup-indicator {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 14px;
+            font-weight: bold;
+            color: #ffaa00;
+            text-shadow: 0 0 15px #ffaa00;
+            letter-spacing: 2px;
+            pointer-events: none;
         }
 
         /* Overlay screens */
@@ -217,99 +266,106 @@
             background: rgba(2, 2, 8, 0.97);
             text-align: center;
             box-sizing: border-box;
-            padding: 30px;
+            padding: 40px;
+            overflow-y: auto;
         }
 
         .btn {
             background: transparent;
             border: 2px solid #00ffcc;
             color: #00ffcc;
-            padding: 14px 35px;
-            font-size: 18px;
+            padding: 16px 40px;
+            font-size: 16px;
             font-family: inherit;
             cursor: pointer;
-            margin-top: 20px;
-            box-shadow: 0 0 12px rgba(0, 255, 204, 0.2);
+            margin-top: 24px;
+            border-radius: 6px;
+            letter-spacing: 1px;
+            box-shadow: 0 0 12px rgba(0, 255, 204, 0.15);
             transition: all 0.2s ease;
         }
 
         .btn:hover {
             background: #00ffcc;
             color: #020206;
-            box-shadow: 0 0 25px rgba(0, 255, 204, 0.7);
-            transform: scale(1.04);
+            box-shadow: 0 0 30px rgba(0, 255, 204, 0.6);
+            transform: scale(1.03);
         }
 
         .vocab-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            max-width: 900px;
-            margin: 20px 0;
+            gap: 16px;
+            max-width: 860px;
+            margin: 24px 0;
         }
 
         .vocab-card {
             background: rgba(8, 8, 25, 0.7);
-            border: 1px solid #ff00ff;
-            padding: 12px;
-            border-radius: 4px;
+            border: 1px solid rgba(255, 0, 255, 0.5);
+            padding: 16px;
+            border-radius: 8px;
             text-align: left;
         }
 
         .vocab-card h3 {
-            margin: 0 0 6px 0;
+            margin: 0 0 8px 0;
             color: #ff00ff;
-            font-size: 14px;
+            font-size: 13px;
+            letter-spacing: 0.5px;
         }
 
         .vocab-card p {
             margin: 0;
-            font-size: 11px;
-            line-height: 1.4;
-            color: #fff;
-            opacity: 0.9;
+            font-size: 12px;
+            line-height: 1.5;
+            color: #ddd;
         }
 
         .example-box {
-            background: rgba(0, 255, 204, 0.04);
-            border: 1px dashed #00ffcc;
-            padding: 10px;
+            background: rgba(0, 255, 204, 0.03);
+            border: 1px solid rgba(0, 255, 204, 0.25);
+            padding: 16px 20px;
             max-width: 720px;
             font-size: 12px;
-            line-height: 1.5;
-            margin-bottom: 10px;
-            border-radius: 4px;
+            line-height: 1.7;
+            margin-bottom: 12px;
+            border-radius: 8px;
+            text-align: left;
         }
 
         #game-over-screen {
             display: none;
-            background: rgba(18, 0, 8, 0.97);
-            border: 4px solid #ff0055;
+            background: rgba(12, 0, 6, 0.97);
+            border: 3px solid #ff0055;
+            border-radius: 12px;
         }
 
         #game-over-screen h1 {
             color: #ff0055;
-            text-shadow: 0 0 25px #ff0055;
-            font-size: 42px;
-            margin-bottom: 8px;
+            text-shadow: 0 0 20px rgba(255, 0, 85, 0.6);
+            font-size: 38px;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
         }
 
         .stats-report {
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid #ff0055;
-            padding: 15px;
-            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 0, 85, 0.4);
+            padding: 20px 24px;
+            border-radius: 8px;
             text-align: left;
-            min-width: 300px;
-            font-size: 13px;
-            line-height: 1.8;
-            margin: 15px 0;
+            min-width: 320px;
+            font-size: 14px;
+            line-height: 2.0;
+            margin: 20px 0;
         }
 
         .controls-hint {
-            margin-top: 20px;
+            margin-top: 24px;
             font-size: 12px;
-            color: #666;
+            color: #555;
+            letter-spacing: 0.3px;
         }
 
         /* Full-screen educational flash message */
@@ -326,45 +382,47 @@
             align-items: center;
             pointer-events: none;
             opacity: 0;
-            transition: opacity 0.2s ease-in;
+            transition: opacity 0.3s ease-out;
             text-align: center;
-            padding: 40px;
+            padding: 50px;
             box-sizing: border-box;
         }
 
         .flash-overlay.visible {
             opacity: 1;
+            transition: opacity 0.15s ease-in;
         }
 
         .flash-overlay.match-flash {
-            background: radial-gradient(ellipse at center, rgba(0, 255, 204, 0.25) 0%, rgba(2, 2, 8, 0.85) 70%);
+            background: radial-gradient(ellipse at center, rgba(0, 255, 204, 0.2) 0%, rgba(2, 2, 8, 0.8) 65%);
         }
 
         .flash-overlay.error-flash {
-            background: radial-gradient(ellipse at center, rgba(255, 0, 85, 0.3) 0%, rgba(2, 2, 8, 0.85) 70%);
+            background: radial-gradient(ellipse at center, rgba(255, 0, 85, 0.25) 0%, rgba(2, 2, 8, 0.8) 65%);
         }
 
         .flash-title {
-            font-size: 42px;
+            font-size: 38px;
             font-weight: bold;
-            margin-bottom: 12px;
-            text-shadow: 0 0 30px currentColor;
+            margin-bottom: 16px;
+            text-shadow: 0 0 25px currentColor;
+            letter-spacing: 1px;
         }
 
         .flash-explain {
-            font-size: 18px;
-            max-width: 700px;
-            line-height: 1.5;
+            font-size: 17px;
+            max-width: 650px;
+            line-height: 1.6;
             color: #fff;
             opacity: 0.95;
         }
 
         .flash-detail {
-            font-size: 14px;
-            margin-top: 10px;
-            color: #aaa;
-            max-width: 600px;
-            line-height: 1.4;
+            font-size: 13px;
+            margin-top: 14px;
+            color: #999;
+            max-width: 560px;
+            line-height: 1.5;
         }
     </style>
 </head>
@@ -381,20 +439,20 @@
 
     <!-- HUD Overlay -->
     <div class="hud" id="hud" style="display: none;">
-        <!-- Left Sidebar (Stats, Level, Score) -->
+        <!-- Left Sidebar -->
         <div class="left-sidebar">
             <div class="hud-panel score-board">
-                <div style="font-size: 10px; color: #ff00ff; letter-spacing: 1px; font-weight: bold; margin-bottom: 3px;">SIMPLIFIED TERMS</div>
+                <div class="score-label">Score</div>
                 <div id="score-val-container"><span id="score-val">0</span></div>
-                <div style="font-size: 11px; color: #888; margin-top: 5px;">LEVEL Stage: <span id="level-val">1</span></div>
+                <div class="level-label">Level <span id="level-val">1</span></div>
             </div>
 
             <div class="hud-panel stats">
-                <div>STABILITY SHIELD: <span id="shield-val">100</span>%</div>
+                <div class="stat-label">Shield: <span id="shield-val">100</span>%</div>
                 <div class="bar-container">
                     <div class="bar-fill" id="shield-bar"></div>
                 </div>
-                <div>MATRIX TIME: <span id="time-val">60</span>s</div>
+                <div class="stat-label">Time: <span id="time-val">60</span>s</div>
                 <div class="bar-container time-container">
                     <div class="bar-fill" id="time-bar"></div>
                 </div>
@@ -405,73 +463,73 @@
 
         <div class="powerup-indicator" id="pw-indicator">BOMB STABILIZED</div>
 
-        <!-- Right Sidebar (Interactive Scanner) -->
+        <!-- Right Sidebar -->
         <div class="right-sidebar">
             <div class="hud-panel scanner-panel">
-                <div class="scanner-header">NODE DETECTOR SCANNER</div>
+                <div class="scanner-header">Node Scanner</div>
                 <div class="scanner-data">
-                    <div>VALUE: <span id="scan-term">---</span></div>
-                    <div>CLASSIFICATION: <span id="scan-type">---</span></div>
-                    <div>COEFFICIENT: <span id="scan-coeff">---</span></div>
-                    <div>PRONUMERAL: <span id="scan-pr">---</span></div>
+                    <div>Value: <span id="scan-term">---</span></div>
+                    <div>Type: <span id="scan-type">---</span></div>
+                    <div>Coefficient: <span id="scan-coeff">---</span></div>
+                    <div>Pronumeral: <span id="scan-pr">---</span></div>
                 </div>
-                <div class="scanner-info">Swap adjacent nodes. Align identical pronumerals!</div>
+                <div class="scanner-info">Swap adjacent nodes to align identical pronumerals.</div>
             </div>
         </div>
     </div>
 
     <!-- Onboarding Panel -->
     <div class="screen-overlay" id="start-screen">
-        <h1 style="color: #00ffcc; text-shadow: 0 0 15px #00ffcc; font-size: 36px; margin: 0 0 5px 0;">ALGEBRA CRUSH</h1>
-        <p style="color: #ff00ff; font-size: 15px; max-width: 750px; margin: 0 auto; line-height: 1.4;">
-            Align the coordinates to simplify coefficients. Swap nodes to align 3 or more <b>like terms</b>!
+        <h1 style="color: #00ffcc; text-shadow: 0 0 15px rgba(0,255,204,0.5); font-size: 34px; margin: 0 0 8px 0; letter-spacing: 2px;">LIKE TERMS MATCH</h1>
+        <p style="color: #ff00ff; font-size: 15px; max-width: 650px; margin: 0 auto 8px; line-height: 1.5;">
+            Swap nodes to align 3 or more <b>like terms</b> and simplify them!
         </p>
 
         <div class="vocab-grid">
             <div class="vocab-card">
                 <h3>1. PRONUMERAL</h3>
-                <p>The variable letters (e.g., <b>x</b>, <b>y</b>, <b>x²</b>). Like terms must contain the <b>exact same pronumerals</b> with identical powers.</p>
+                <p>The variable part (e.g., <b>x</b>, <b>y</b>, <b>x&sup2;</b>). Like terms must share the <b>exact same pronumeral</b> and power.</p>
             </div>
             <div class="vocab-card">
                 <h3>2. COEFFICIENT</h3>
-                <p>The multiplier number in front (e.g., the <b>-4</b> in <b>-4x</b>). Coefficients <b>do not matter</b> when matching like terms!</p>
+                <p>The number in front (e.g., <b>-4</b> in <b>-4x</b>). Coefficients <b>don't matter</b> when matching &mdash; only the variable matters!</p>
             </div>
             <div class="vocab-card">
                 <h3>3. CONSTANT</h3>
-                <p>Isolated numbers with no variables (e.g., <b>9</b>, <b>-3</b>, <b>i²</b> which resolves to -1). Constants are always like terms with other constants.</p>
+                <p>Numbers with no variable (e.g., <b>9</b>, <b>-3</b>, <b>i&sup2;</b> = -1). Constants always match other constants.</p>
             </div>
         </div>
 
         <div class="example-box">
-            <b>DANGERS & PROGRESSIVE CHALLENGES ENGAGED:</b><br/>
-            • <b>PEMDAS Bombs (Gold stars)</b> will detonate to clear whole rows & columns if matched!<br/>
-            • <b>Divide-by-Zero Traps (Black spikes)</b> cannot be matched. Swap them incorrectly to lose -30 shields! Clear them with adjacent matches.<br/>
-            • <b>Adaptive Scaffolding:</b> Assist colors and unique shapes <b>disappear entirely</b> at Level 3.<br/>
-            • <b>Controls:</b> Left click adjacent to swap. **Right-Click & drag** to rotate camera view!
+            <b>Special Blocks:</b><br/>
+            &bull; <b>PEMDAS Bombs</b> (gold) &mdash; clear entire row + column when triggered by adjacent matches<br/>
+            &bull; <b>Divide-by-Zero Traps</b> (red) &mdash; can't be matched directly; clear them with adjacent matches or lose shields<br/>
+            &bull; <b>Scaffolding</b> &mdash; colours and shapes gradually fade as you level up
         </div>
 
-        <button class="btn" id="start-btn">INITIALIZE MATRIX</button>
+        <button class="btn" id="start-btn">START GAME</button>
         <div class="controls-hint">
-            Left Click Block A &rarr; Click Adjacent Block B to Swap &nbsp;|&nbsp; Right Click / Drag to rotate board
+            Left-click to select &amp; swap adjacent blocks &nbsp;&bull;&nbsp; Right-click + drag to rotate the board
         </div>
     </div>
 
     <!-- Game Over Panel with Statistics -->
     <div class="screen-overlay" id="game-over-screen">
-        <h1>MATRIX CRITICAL BREAKDOWN</h1>
-        <p style="font-size: 14px; color: #fff; max-width: 500px; line-height: 1.5; margin: 0;">
-            Equation structure collapsed. Review your algebraic diagnostic stats:
+        <h1>GAME OVER</h1>
+        <p style="font-size: 14px; color: #ccc; max-width: 460px; line-height: 1.6; margin: 0 0 8px;">
+            Your matrix collapsed. Here's how you did:
         </p>
-        
-        <div class="stats-report">
-            <div style="font-size: 15px; color: #ffaa00; font-weight: bold; border-bottom: 1px dashed #ff0055; margin-bottom: 8px; padding-bottom: 4px; text-align: center;">ALGEBRAIC SCORECARD</div>
-            • HIGHEST MATRIX STAGE: <span id="stat-level" style="color: #ff00ff; font-weight: bold;">1</span><br/>
-            • TERMS SIMPLIFIED: <span id="stat-matches" style="color: #00ffcc; font-weight: bold;">0</span><br/>
-            • ALGEBRAIC VIOLATIONS: <span id="stat-violations" style="color: #ff0055; font-weight: bold;">0</span><br/>
-            • SWAP ACCURACY RATING: <span id="stat-accuracy" style="color: #ffff00; font-weight: bold;">100%</span>
+
+        <div style="font-size: 28px; color: #00ffcc; font-weight: bold; margin: 12px 0; text-shadow: 0 0 12px rgba(0,255,204,0.4);">
+            <span id="final-score">0</span> <span style="font-size: 14px; color: #888; font-weight: normal;">points</span>
         </div>
 
-        <div style="font-size: 20px; color: #ff0055; margin-top: 10px;">FINAL SCORE: <span id="final-score" style="color: #00ffcc; font-weight: bold;">0</span></div>
+        <div class="stats-report">
+            Highest Level: <span id="stat-level" style="color: #ff00ff; font-weight: bold;">1</span><br/>
+            Terms Simplified: <span id="stat-matches" style="color: #00ffcc; font-weight: bold;">0</span><br/>
+            Violations: <span id="stat-violations" style="color: #ff0055; font-weight: bold;">0</span><br/>
+            Swap Accuracy: <span id="stat-accuracy" style="color: #ffff00; font-weight: bold;">100%</span>
+        </div>
 
         <button class="btn" id="restart-btn" style="border-color: #ff0055; color: #ff0055;">RESET EQUATIONS</button>
     </div>
