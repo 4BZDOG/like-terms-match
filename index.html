@@ -34,7 +34,7 @@
             padding: 20px;
             box-sizing: border-box;
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             justify-content: space-between;
             width: 100%;
             height: 100%;
@@ -42,14 +42,13 @@
 
         .hud-top {
             display: flex;
-            justify-content: space-between;
             width: 100%;
             gap: 15px;
         }
 
         /* Highly translucent default state with transitions */
         .hud-panel {
-            background: rgba(2, 2, 8, 0.5); 
+            background: rgba(2, 2, 8, 0.4); 
             border: 2px solid #00ffcc;
             box-shadow: 0 0 15px rgba(0, 255, 204, 0.15);
             padding: 12px 18px;
@@ -60,21 +59,27 @@
                 transform 0.25s cubic-bezier(0.25, 1, 0.5, 1), 
                 box-shadow 0.25s cubic-bezier(0.25, 1, 0.5, 1), 
                 border-color 0.25s cubic-bezier(0.25, 1, 0.5, 1);
-            transform-origin: center;
+            transform-origin: left top;
         }
 
         /* Hover: Less translucent (more opaque), enlarged, and enhanced glow */
         .hud-panel:hover {
             background: rgba(2, 2, 8, 0.96); 
-            transform: scale(1.06); 
+            transform: scale(1.05); 
             box-shadow: 0 0 25px rgba(0, 255, 204, 0.45);
             z-index: 20;
         }
 
-        /* Prominent Score Container */
+        /* Minimal Status Column on Left */
+        .left-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 250px;
+        }
+
         .score-board {
-            text-align: center;
-            min-width: 160px;
+            text-align: left;
             border-color: #ff00ff;
             box-shadow: 0 0 15px rgba(255, 0, 255, 0.15);
         }
@@ -91,15 +96,11 @@
             text-shadow: 0 0 15px #00ffcc;
             transition: transform 0.15s ease-out, color 0.15s;
             display: inline-block;
-            margin-top: 5px;
         }
 
-        /* Stats & Timers */
         .stats {
             font-size: 13px;
             line-height: 1.4;
-            flex-grow: 1;
-            max-width: 400px;
         }
 
         .bar-container {
@@ -129,12 +130,19 @@
             border-color: #ffaa00;
         }
 
-        /* Realtime Hover Block Scanner */
+        /* Realtime Hover Block Scanner (Moved to Bottom Right) */
+        .right-sidebar {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            width: 280px;
+        }
+
         .scanner-panel {
             border-color: #ffaa00;
             box-shadow: 0 0 15px rgba(255, 170, 0, 0.15);
-            width: 300px;
             text-align: left;
+            transform-origin: right bottom;
         }
 
         .scanner-panel:hover {
@@ -182,6 +190,7 @@
             display: flex;
             flex-direction: column-reverse;
             pointer-events: auto;
+            align-self: flex-end;
         }
 
         .log-panel:hover {
@@ -310,27 +319,32 @@
 
     <!-- HUD Overlay -->
     <div class="hud" id="hud" style="display: none;">
-        <div class="hud-top">
-            <!-- Left Scoreboard -->
+        <!-- Left Sidebar (Stats, Level, Score) -->
+        <div class="left-sidebar">
             <div class="hud-panel score-board">
-                <div style="font-size: 11px; color: #ff00ff; letter-spacing: 1px; font-weight: bold;">SIMPLIFIED TERMS</div>
+                <div style="font-size: 10px; color: #ff00ff; letter-spacing: 1px; font-weight: bold; margin-bottom: 3px;">SIMPLIFIED TERMS</div>
                 <div id="score-val-container"><span id="score-val">0</span></div>
-                <div style="font-size: 11px; color: #888; margin-top: 5px;">LEVEL: <span id="level-val">1</span></div>
+                <div style="font-size: 11px; color: #888; margin-top: 5px;">LEVEL Stage: <span id="level-val">1</span></div>
             </div>
 
-            <!-- Middle Depletion Gauges -->
             <div class="hud-panel stats">
                 <div>STABILITY SHIELD: <span id="shield-val">100</span>%</div>
                 <div class="bar-container">
                     <div class="bar-fill" id="shield-bar"></div>
                 </div>
-                <div>MATRIX SYSTEM TIME: <span id="time-val">60</span>s</div>
+                <div>MATRIX TIME: <span id="time-val">60</span>s</div>
                 <div class="bar-container time-container">
                     <div class="bar-fill" id="time-bar"></div>
                 </div>
             </div>
 
-            <!-- Right Hover Block Scanner -->
+            <div class="hud-panel log-panel" id="log-panel"></div>
+        </div>
+
+        <div class="powerup-indicator" id="pw-indicator">BOMB STABILIZED</div>
+
+        <!-- Right Sidebar (Interactive Scanner) -->
+        <div class="right-sidebar">
             <div class="hud-panel scanner-panel">
                 <div class="scanner-header">NODE DETECTOR SCANNER</div>
                 <div class="scanner-data">
@@ -342,11 +356,6 @@
                 <div class="scanner-info">Swap adjacent nodes. Align identical pronumerals!</div>
             </div>
         </div>
-
-        <div class="powerup-indicator" id="pw-indicator">TRIPLE LASERS ACTIVE</div>
-
-        <!-- Log Panel -->
-        <div class="hud-panel log-panel" id="log-panel"></div>
     </div>
 
     <!-- Onboarding Panel -->
@@ -372,8 +381,11 @@
         </div>
 
         <div class="example-box">
-            <b>ADAPTIVE SCAFFOLDING ENGAGED:</b> Level 1 features color-coded backplates on blocks to help build matching confidence. 
-            As you level up, these help colors will fade away, forcing you to identify terms strictly by reading the variables!
+            <b>DANGERS & PROGRESSIVE CHALLENGES ENGAGED:</b><br/>
+            • <b>PEMDAS Bombs (Gold stars)</b> will detonate to clear whole rows & columns if matched!<br/>
+            • <b>Divide-by-Zero Traps (Black spikes)</b> cannot be matched. Swap them incorrectly to lose -30 shields! Clear them with adjacent matches.<br/>
+            • <b>Adaptive Scaffolding:</b> Assist colors and unique shapes <b>disappear entirely</b> at Level 3.<br/>
+            • <b>Controls:</b> Left click adjacent to swap. **Right-Click & drag** to rotate camera view!
         </div>
 
         <button class="btn" id="start-btn">INITIALIZE MATRIX</button>
@@ -396,6 +408,8 @@
             • ALGEBRAIC VIOLATIONS: <span id="stat-violations" style="color: #ff0055; font-weight: bold;">0</span><br/>
             • SWAP ACCURACY RATING: <span id="stat-accuracy" style="color: #ffff00; font-weight: bold;">100%</span>
         </div>
+
+        <div style="font-size: 20px; color: #ff0055; margin-top: 10px;">FINAL SCORE: <span id="final-score" style="color: #00ffcc; font-weight: bold;">0</span></div>
 
         <button class="btn" id="restart-btn" style="border-color: #ff0055; color: #ff0055;">RESET EQUATIONS</button>
     </div>
@@ -515,9 +529,14 @@
                 accuracy: 100
             };
 
+            // Combo cascading scroller physics
+            let comboMultiplier = 1;
+            let warpBoost = 1.0;
+            let idleTimer = 0.0; // Idle check system
+
             let rows = 5;
             let cols = 5;
-            const nodeSpacing = 2.4;
+            const nodeSpacing = 2.8; 
 
             let scene, camera, renderer, selectionRing; 
             let gridContainer; 
@@ -543,10 +562,15 @@
             let boardState = "READY"; 
             let animationTimer = 0;
             let animationSwapPair = []; 
+            let glitchTimer = 0; // State timer for mismatch vibrations
+
+            // Camera manual drag rotate properties
+            let isDragging = false;
+            let previousMousePosition = { x: 0, y: 0 };
 
             function init() {
                 scene = new THREE.Scene();
-                scene.fog = new THREE.FogExp2(0x020206, 0.02);
+                scene.fog = new THREE.FogExp2(0x020206, 0.025);
 
                 camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
                 camera.position.set(0, 0, 16);
@@ -566,14 +590,14 @@
                 scene.add(pointLight);
 
                 gridContainer = new THREE.Group();
-                gridContainer.rotation.x = 0.15;
-                gridContainer.rotation.y = -0.15;
+                gridContainer.rotation.x = 0.12;
+                gridContainer.rotation.y = -0.12;
                 scene.add(gridContainer);
 
                 raycaster = new THREE.Raycaster();
                 mouse = new THREE.Vector2();
 
-                const selectionRingGeom = new THREE.RingGeometry(1.2, 1.3, 16);
+                const selectionRingGeom = new THREE.RingGeometry(1.4, 1.5, 16);
                 const selectionRingMat = new THREE.MeshBasicMaterial({ color: 0xff00ff, side: THREE.DoubleSide });
                 selectionRing = new THREE.Mesh(selectionRingGeom, selectionRingMat);
                 selectionRing.visible = false;
@@ -584,6 +608,27 @@
                 window.addEventListener('resize', onWindowResize);
                 window.addEventListener('mousemove', onMouseMove);
                 window.addEventListener('mousedown', onMouseDown);
+                
+                // Camera Rotation Mouse Listeners
+                window.addEventListener('mousedown', (e) => {
+                    if (e.button === 2) { // Right Click
+                        isDragging = true;
+                        previousMousePosition = { x: e.clientX, y: e.clientY };
+                    }
+                });
+                window.addEventListener('mousemove', (e) => {
+                    if (isDragging) {
+                        const deltaMove = {
+                            x: e.clientX - previousMousePosition.x,
+                            y: e.clientY - previousMousePosition.y
+                        };
+                        gridContainer.rotation.y += deltaMove.x * 0.005;
+                        gridContainer.rotation.x += deltaMove.y * 0.005;
+                        previousMousePosition = { x: e.clientX, y: e.clientY };
+                    }
+                });
+                window.addEventListener('mouseup', () => { isDragging = false; });
+                window.addEventListener('contextmenu', e => e.preventDefault()); // prevent context menu on right click
 
                 animate();
             }
@@ -591,22 +636,48 @@
 
             // --- GRID DESIGN GENERATORS ---
 
-            function createNodeMesh(term, groupKey) {
+            function createNodeMesh(term, groupKey, specialType = "NORMAL") {
                 const group = new THREE.Group();
                 let geom, colorHex = 0xffffff;
 
-                switch(groupKey) {
-                    case 'x': geom = new THREE.IcosahedronGeometry(0.75, 0); colorHex = 0x00ff88; break;
-                    case 'y': geom = new THREE.TorusGeometry(0.55, 0.22, 8, 16); colorHex = 0x00aaff; break;
-                    case 'const': geom = new THREE.BoxGeometry(1.0, 1.0, 1.0); colorHex = 0xff3355; break;
-                    case 'x2': geom = new THREE.ConeGeometry(0.75, 1.3, 4); colorHex = 0xff00ff; break;
-                    case 'xy': geom = new THREE.TorusKnotGeometry(0.4, 0.15, 32, 6); colorHex = 0xffaa00; break;
+                if (specialType === "BOMB") {
+                    geom = new THREE.OctahedronGeometry(0.85, 0);
+                    colorHex = 0xffaa00; // Gold Bomb
+                } else if (specialType === "TRAP") {
+                    geom = new THREE.OctahedronGeometry(0.75, 0);
+                    colorHex = 0xff1144; // Spiky Anomaly Red
+                } else {
+                    if (level >= 3) {
+                        geom = new THREE.SphereGeometry(0.7, 12, 12); // All blocks look identical
+                        colorHex = 0x888888; // Uniform neutral gray
+                    } else {
+                        const baseColor = new THREE.Color();
+                        switch(groupKey) {
+                            case 'x': baseColor.setHex(0x00ff88); break;
+                            case 'y': baseColor.setHex(0x00aaff); break;
+                            case 'const': baseColor.setHex(0xff3355); break;
+                            case 'x2': baseColor.setHex(0xff00ff); break;
+                            case 'xy': baseColor.setHex(0xffaa00); break;
+                        }
+                        if (level === 2) {
+                            baseColor.lerp(new THREE.Color(0x888888), 0.65);
+                        }
+                        colorHex = baseColor.getHex();
+
+                        switch(groupKey) {
+                            case 'x': geom = new THREE.IcosahedronGeometry(0.75, 0); break;
+                            case 'y': geom = new THREE.TorusGeometry(0.55, 0.22, 8, 16); break;
+                            case 'const': geom = new THREE.BoxGeometry(1.0, 1.0, 1.0); break;
+                            case 'x2': geom = new THREE.ConeGeometry(0.75, 1.3, 4); break;
+                            case 'xy': geom = new THREE.TorusKnotGeometry(0.4, 0.15, 32, 6); break;
+                        }
+                    }
                 }
 
                 const mesh = new THREE.Mesh(geom, new THREE.MeshPhongMaterial({ color: colorHex, wireframe: true }));
                 group.add(mesh);
 
-                const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: createTextTexture(term, groupKey), transparent: true }));
+                const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: createTextTexture(term, groupKey, specialType), transparent: true }));
                 sprite.scale.set(3.2, 1.6, 1);
                 sprite.position.set(0, 0, 0.35); 
                 group.add(sprite);
@@ -614,22 +685,35 @@
                 return { group, mesh };
             }
 
-            function createTextTexture(text, groupKey) {
+            function createTextTexture(text, groupKey, specialType = "NORMAL") {
                 const canvas = document.createElement('canvas');
                 canvas.width = 256; canvas.height = 128;
                 const ctx = canvas.getContext('2d');
                 ctx.clearRect(0, 0, 256, 128);
 
-                const helperOpacity = Math.max(0.05, 0.85 - (level - 1) * 0.35);
+                let helperOpacity = Math.max(0.0, 0.85 - (level - 1) * 0.45);
+                if (specialType === "BOMB" || specialType === "TRAP") {
+                    helperOpacity = 0.9; 
+                }
 
                 let rgb = '10, 10, 30'; 
                 let strokeColor = '#00ffcc';
-                switch (groupKey) {
-                    case 'x': rgb = '0, 255, 136'; strokeColor = '#00ff88'; break;
-                    case 'y': rgb = '0, 170, 255'; strokeColor = '#00aaff'; break;
-                    case 'const': rgb = '255, 51, 85'; strokeColor = '#ff3355'; break;
-                    case 'x2': rgb = '255, 0, 255'; strokeColor = '#ff00ff'; break;
-                    case 'xy': rgb = '255, 170, 0'; strokeColor = '#ffaa00'; break;
+
+                if (specialType === "BOMB") {
+                    rgb = '255, 170, 0'; strokeColor = '#ffaa00';
+                } else if (specialType === "TRAP") {
+                    rgb = '255, 17, 68'; strokeColor = '#ff1144';
+                } else {
+                    switch (groupKey) {
+                        case 'x': rgb = '0, 255, 136'; strokeColor = '#00ff88'; break;
+                        case 'y': rgb = '0, 170, 255'; strokeColor = '#00aaff'; break;
+                        case 'const': rgb = '255, 51, 85'; strokeColor = '#ff3355'; break;
+                        case 'x2': rgb = '255, 0, 255'; strokeColor = '#ff00ff'; break;
+                        case 'xy': rgb = '255, 170, 0'; strokeColor = '#ffaa00'; break;
+                    }
+                    if (level >= 3) {
+                        strokeColor = '#888888'; 
+                    }
                 }
 
                 ctx.fillStyle = `rgba(${rgb}, ${helperOpacity})`;
@@ -665,7 +749,6 @@
                 if (starfieldSlow) cleanThreeEntity(starfieldSlow);
                 if (starfieldFast) cleanThreeEntity(starfieldFast);
 
-                // Layer 1: Slow Deep Background Stars (Tiny, many)
                 const totalSlow = 600;
                 const geomSlow = new THREE.BufferGeometry();
                 const posSlow = new Float32Array(totalSlow * 3);
@@ -683,7 +766,6 @@
                 starfieldSlow = new THREE.Points(geomSlow, new THREE.PointsMaterial({ size: 0.6, vertexColors: true, transparent: true, opacity: 0.8 }));
                 scene.add(starfieldSlow);
 
-                // Layer 2: Fast Foreground Cosmic Stars (Larger, color-shifting warp fields)
                 const totalFast = 200;
                 const geomFast = new THREE.BufferGeometry();
                 const posFast = new Float32Array(totalFast * 3);
@@ -693,7 +775,6 @@
                     posFast[i+1] = (Math.random() - 0.5) * 80;
                     posFast[i+2] = -Math.random() * 200;
                     
-                    // Hot neon colors (Cyan vs Magenta/Yellow bias)
                     colFast[i] = Math.random() > 0.5 ? 1.0 : 0.0;
                     colFast[i+1] = Math.random() > 0.5 ? 1.0 : 0.0;
                     colFast[i+2] = 1.0;
@@ -727,21 +808,32 @@
                 else { rows = 7; cols = 7; }
 
                 const allowedKeys = LEVEL_GROUPS[Math.min(level - 1, LEVEL_GROUPS.length - 1)];
-                camera.position.z = 11 + Math.max(rows, cols) * 1.0;
+                camera.position.z = 11 + Math.max(rows, cols) * 1.25;
 
                 for (let r = 0; r < rows; r++) {
                     board[r] = [];
                     for (let c = 0; c < cols; c++) {
-                        let groupKey, term, attempts = 0;
+                        let groupKey, term, specialType = "NORMAL", attempts = 0;
 
-                        do {
-                            groupKey = allowedKeys[Math.floor(Math.random() * allowedKeys.length)];
-                            const pool = TERM_GROUPS[groupKey].terms;
-                            term = pool[Math.floor(Math.random() * pool.length)];
-                            attempts++;
-                        } while (wouldCreateMatch(r, c, groupKey) && attempts < 50);
+                        const roll = Math.random();
+                        if (roll < 0.05) {
+                            specialType = "BOMB";
+                            term = "💣 BOMB";
+                            groupKey = "const";
+                        } else if (roll > 0.95) {
+                            specialType = "TRAP";
+                            term = "÷0 TRAP";
+                            groupKey = "const";
+                        } else {
+                            do {
+                                groupKey = allowedKeys[Math.floor(Math.random() * allowedKeys.length)];
+                                const pool = TERM_GROUPS[groupKey].terms;
+                                term = pool[Math.floor(Math.random() * pool.length)];
+                                attempts++;
+                            } while (wouldCreateMatch(r, c, groupKey) && attempts < 50);
+                        }
 
-                        const nodeData = createNodeMesh(term, groupKey);
+                        const nodeData = createNodeMesh(term, groupKey, specialType);
                         nodeData.group.position.set(calcX(c), calcY(r), 0);
                         gridContainer.add(nodeData.group);
 
@@ -750,6 +842,7 @@
                             innerMesh: nodeData.mesh,
                             termText: term,
                             groupKey: groupKey,
+                            specialType: specialType,
                             gridX: c,
                             gridY: r,
                             targetPos: new THREE.Vector3(calcX(c), calcY(r), 0),
@@ -764,6 +857,7 @@
                 selectedNode = null;
                 selectionRing.visible = false;
                 boardState = "READY";
+                idleTimer = 0.0;
             }
 
             function calcX(c) { return (c - (cols - 1) / 2) * nodeSpacing; }
@@ -804,10 +898,11 @@
                 let toDestroy = new Set();
                 let matchDataList = []; 
 
+                // Horizontal Check
                 for (let r = 0; r < rows; r++) {
                     let matchLen = 1;
                     for (let c = 1; c <= cols; c++) {
-                        if (c < cols && board[r][c]?.groupKey === board[r][c-1]?.groupKey) {
+                        if (c < cols && board[r][c]?.groupKey === board[r][c-1]?.groupKey && board[r][c]?.specialType === "NORMAL" && board[r][c-1]?.specialType === "NORMAL") {
                             matchLen++;
                         } else {
                             if (matchLen >= 3) {
@@ -823,10 +918,11 @@
                     }
                 }
 
+                // Vertical Check
                 for (let c = 0; c < cols; c++) {
                     let matchLen = 1;
                     for (let r = 1; r <= rows; r++) {
-                        if (r < rows && board[r][c]?.groupKey === board[r-1][c]?.groupKey) {
+                        if (r < rows && board[r][c]?.groupKey === board[r-1][c]?.groupKey && board[r][c]?.specialType === "NORMAL" && board[r-1][c]?.specialType === "NORMAL") {
                             matchLen++;
                         } else {
                             if (matchLen >= 3) {
@@ -842,39 +938,79 @@
                     }
                 }
 
+                // PEMDAS Bomb Match Activation check
+                toDestroy.forEach(node => {
+                    const r = node.gridY, c = node.gridX;
+                    const directions = [[1,0], [-1,0], [0,1], [0,-1]];
+                    directions.forEach(d => {
+                        const targetRow = r + d[1], targetCol = c + d[0];
+                        if (targetRow >= 0 && targetRow < rows && targetCol >= 0 && targetCol < cols) {
+                            const adjNode = board[targetRow][targetCol];
+                            if (adjNode && adjNode.specialType === "BOMB") {
+                                triggerPEMDASBomb(adjNode, toDestroy);
+                            }
+                            if (adjNode && adjNode.specialType === "TRAP") {
+                                addLog("STABILIZED: Safely cleared Adjacent Divide-by-Zero Anomaly!");
+                                toDestroy.add(adjNode);
+                                score += 200;
+                            }
+                        }
+                    });
+                });
+
                 if (toDestroy.size > 0) {
                     boardState = "RESOLVING";
                     
                     matchDataList.forEach(matchData => {
+                        // Gather coefficients to build a clear factoring formula
+                        const coeffsArray = matchData.nodes.map(node => parseAlgebraTerm(node.termText, node.groupKey).numericCoeff);
                         let sum = 0;
                         let prPart = '';
+                        
                         matchData.nodes.forEach(node => {
                             const parsed = parseAlgebraTerm(node.termText, node.groupKey);
                             sum += parsed.numericCoeff;
                             if (parsed.pronumeral !== 'None') prPart = parsed.pronumeral;
                         });
 
-                        let compiledStr = '';
+                        // Render distributive step for educational clarity
+                        let algebraicFeedback = "";
                         if (matchData.groupKey === 'const') {
-                            compiledStr = `${parseFloat(sum.toFixed(1))}`;
-                        } else {
+                            const equationStr = coeffsArray.map(c => c >= 0 ? "+" + c : c).join(" ").replace(/^\+/, "");
                             const cleanSum = parseFloat(sum.toFixed(1));
+                            algebraicFeedback = `SIMPLIFIED: ${equationStr.replace(/\+ -/g, "- ")} = ${cleanSum}`;
+                        } else {
+                            const equationStr = coeffsArray.map(c => c >= 0 ? "+" + c : c).join(" ").replace(/^\+/, "");
+                            const cleanSum = parseFloat(sum.toFixed(1));
+                            let compiledStr = '';
                             if (cleanSum === 1) compiledStr = prPart;
                             else if (cleanSum === -1) compiledStr = `-${prPart}`;
                             else compiledStr = `${cleanSum}${prPart}`;
+
+                            algebraicFeedback = `FACTORED: (${equationStr.replace(/\+ -/g, "- ")})*${prPart} = ${compiledStr}`;
                         }
 
                         const popPos = matchData.nodes[0].meshGroup.position.clone();
-                        create3DPopup(popPos, `COMBINED TO: ${compiledStr}!`, "#00ffcc");
-                        addLog(`SIMPLIFIED: Combined matching terms into: ${compiledStr}`);
+                        create3DPopup(popPos, `COMBO x${comboMultiplier}!`, "#ff00ff");
+                        addLog(algebraicFeedback);
                     });
 
                     playMatch();
 
+                    // Apply combo points multiplier
+                    const pointsAdded = toDestroy.size * 100 * comboMultiplier;
+                    score += pointsAdded;
+                    stats.matchesMade += toDestroy.size;
+
+                    // Trigger Hyper-Drive space warp speed visual combo booster
+                    warpBoost = Math.min(4.0, warpBoost + (0.5 * comboMultiplier));
+
                     toDestroy.forEach(node => {
-                        score++;
-                        stats.matchesMade++;
-                        generateBurst(node.meshGroup.position, 0x00ffcc, 15);
+                        let animStyle = "SPIRAL";
+                        if (node.groupKey === "const") animStyle = "IMPLODE";
+                        if (node.groupKey === "x2" || node.groupKey === "xy") animStyle = "SHOCKWAVE";
+
+                        generateBurst(node.meshGroup.position, getGroupColor(node.groupKey), 15, animStyle);
                         cleanThreeEntity(node.meshGroup);
                         board[node.gridY][node.gridX] = null;
                     });
@@ -893,9 +1029,39 @@
                         updateGridScaffoldingColors(); 
                     }
 
+                    // Increment chain cascade
+                    comboMultiplier++;
                     setTimeout(shiftGridDown, 400);
                 } else {
                     boardState = "READY";
+                    comboMultiplier = 1; // reset chain
+                }
+            }
+
+            function triggerPEMDASBomb(bombNode, destructionSet) {
+                const r = bombNode.gridY, c = bombNode.gridX;
+                addLog("PEMDAS BOOM: Row and Column factorization triggered!");
+                generateBurst(bombNode.meshGroup.position, 0xffaa00, 45, "SHOCKWAVE");
+                score += 500; 
+
+                for (let colIdx = 0; colIdx < cols; colIdx++) {
+                    const node = board[r][colIdx];
+                    if (node) destructionSet.add(node);
+                }
+                for (let rowIdx = 0; rowIdx < rows; rowIdx++) {
+                    const node = board[rowIdx][c];
+                    if (node) destructionSet.add(node);
+                }
+            }
+
+            function getGroupColor(groupKey) {
+                switch(groupKey) {
+                    case 'x': return 0x00ff88;
+                    case 'y': return 0x00aaff;
+                    case 'const': return 0xff3355;
+                    case 'x2': return 0xff00ff;
+                    case 'xy': return 0xffaa00;
+                    default: return 0xffffff;
                 }
             }
 
@@ -925,7 +1091,7 @@
             }
 
             function updateGridScaffoldingColors() {
-                const currentOpacityPercent = Math.max(5, Math.round((0.85 - (level - 1) * 0.35) * 100));
+                const currentOpacityPercent = Math.max(5, Math.round((0.85 - (level - 1) * 0.45) * 100));
                 addLog(`MATRIX SHIFT Stage ${level}: Scaffolding assist diminished to ${currentOpacityPercent}% opacity!`);
                 for (let r = 0; r < rows; r++) {
                     for (let c = 0; c < cols; c++) {
@@ -933,7 +1099,7 @@
                         if (node) {
                             const sprite = node.meshGroup.children[1];
                             if (sprite.material.map) sprite.material.map.dispose();
-                            sprite.material.map = createTextTexture(node.termText, node.groupKey);
+                            sprite.material.map = createTextTexture(node.termText, node.groupKey, node.specialType);
                             sprite.material.needsUpdate = true;
                         }
                     }
@@ -960,11 +1126,24 @@
 
                     for (let i = 0; i < emptySpaces; i++) {
                         const targetRow = rows - emptySpaces + i;
-                        const groupKey = allowedKeys[Math.floor(Math.random() * allowedKeys.length)];
-                        const pool = TERM_GROUPS[groupKey].terms;
-                        const term = pool[Math.floor(Math.random() * pool.length)];
+                        let groupKey, term, specialType = "NORMAL";
 
-                        const nodeData = createNodeMesh(term, groupKey);
+                        const roll = Math.random();
+                        if (roll < 0.05) {
+                            specialType = "BOMB";
+                            term = "💣 BOMB";
+                            groupKey = "const";
+                        } else if (roll > 0.95) {
+                            specialType = "TRAP";
+                            term = "÷0 TRAP";
+                            groupKey = "const";
+                        } else {
+                            groupKey = allowedKeys[Math.floor(Math.random() * allowedKeys.length)];
+                            const pool = TERM_GROUPS[groupKey].terms;
+                            term = pool[Math.floor(Math.random() * pool.length)];
+                        }
+
+                        const nodeData = createNodeMesh(term, groupKey, specialType);
                         nodeData.group.position.set(calcX(c), calcY(rows + i + 1), 0);
                         gridContainer.add(nodeData.group);
 
@@ -973,6 +1152,7 @@
                             innerMesh: nodeData.mesh,
                             termText: term,
                             groupKey: groupKey,
+                            specialType: specialType,
                             gridX: c,
                             gridY: targetRow,
                             targetPos: new THREE.Vector3(calcX(c), calcY(targetRow), 0),
@@ -999,7 +1179,7 @@
                 for (let r = 0; r < rows; r++) {
                     for (let c = 0; c < cols; c++) {
                         const node = board[r][c];
-                        if (node) {
+                        if (node && boardState !== "GLITCHING") {
                             node.meshGroup.position.lerp(node.targetPos, lerpFactor);
                             node.innerMesh.rotation.x += node.tumble?.x || 0.01;
                             node.innerMesh.rotation.y += node.tumble?.y || 0.01;
@@ -1035,30 +1215,74 @@
                             if (matched) {
                                 evaluateMatches();
                             } else {
-                                stats.violations++;
-                                playDissonance();
-                                shakeCamera(1.2);
-
-                                shield = Math.max(0, shield - 15);
-                                timeLeft = Math.max(0, timeLeft - 8);
-
-                                updateShieldBar();
-                                updateTimeIndicator();
-                                addLog(`VIOLATION: "${nodeA.termText}" is unlike "${nodeB.termText}"! Penalty applied.`);
-
-                                if (shield <= 0 || timeLeft <= 0) {
-                                    triggerGameOver();
+                                if (nodeA.specialType === "TRAP" || nodeB.specialType === "TRAP") {
+                                    timeLeft = Math.max(0, timeLeft - 15);
+                                    shield = Math.max(0, shield - 30);
+                                    playDissonance();
+                                    shakeCamera(2.2);
+                                    updateShieldBar();
+                                    updateTimeIndicator();
+                                    addLog("EXCEPTION ERR: Divided-by-Zero Anomaly detonated! -30 Shields.");
+                                    
+                                    const trapNode = nodeA.specialType === "TRAP" ? nodeA : nodeB;
+                                    generateBurst(trapNode.meshGroup.position, 0xff1144, 30, "IMPLODE");
+                                    cleanThreeEntity(trapNode.meshGroup);
+                                    board[trapNode.gridY][trapNode.gridX] = null;
+                                    
+                                    if (shield <= 0 || timeLeft <= 0) {
+                                        triggerGameOver();
+                                    } else {
+                                        boardState = "FALLING";
+                                        setTimeout(shiftGridDown, 400);
+                                    }
                                 } else {
-                                    executeSwap(nodeA, nodeB, true);
+                                    stats.violations++;
+                                    playDissonance();
+                                    shakeCamera(1.2);
+
+                                    shield = Math.max(0, shield - 15);
+                                    timeLeft = Math.max(0, timeLeft - 8);
+
+                                    updateShieldBar();
+                                    updateTimeIndicator();
+                                    addLog(`VIOLATION: "${nodeA.termText}" is unlike "${nodeB.termText}"! Penalty applied.`);
+
+                                    if (shield <= 0 || timeLeft <= 0) {
+                                        triggerGameOver();
+                                    } else {
+                                        boardState = "GLITCHING";
+                                        glitchTimer = 30; 
+                                    }
                                 }
                             }
                         }
                     }
                 }
+
+                if (boardState === "GLITCHING") {
+                    glitchTimer--;
+                    const nodeA = animationSwapPair[0];
+                    const nodeB = animationSwapPair[1];
+
+                    const offsetA = new THREE.Vector3((Math.random() - 0.5) * 0.35, (Math.random() - 0.5) * 0.35, 0);
+                    const offsetB = new THREE.Vector3((Math.random() - 0.5) * 0.35, (Math.random() - 0.5) * 0.35, 0);
+
+                    nodeA.meshGroup.position.copy(nodeA.targetPos).add(offsetA);
+                    nodeB.meshGroup.position.copy(nodeB.targetPos).add(offsetB);
+
+                    nodeA.innerMesh.material.color.setHex(0xff1144);
+                    nodeB.innerMesh.material.color.setHex(0xff1144);
+
+                    if (glitchTimer <= 0) {
+                        nodeA.innerMesh.material.color.setHex(getGroupColor(nodeA.groupKey));
+                        nodeB.innerMesh.material.color.setHex(getGroupColor(nodeB.groupKey));
+                        executeSwap(nodeA, nodeB, true);
+                    }
+                }
             }
 
             function updateUrgencyTimer(dt) {
-                if (!gameActive || boardState !== "READY") return;
+                if (!gameActive || boardState === "SWAPPING" || boardState === "GLITCHING") return;
 
                 timeLeft = Math.max(0, timeLeft - dt);
                 updateTimeIndicator();
@@ -1087,16 +1311,14 @@
             function updateStars(dt) {
                 if (!starfieldSlow || !starfieldFast) return;
 
-                // Base translation speed scales up dynamically with level Stage!
-                const slowSpeed = (12 + level * 8) * dt;
-                const fastSpeed = (30 + level * 20) * dt;
+                // Base speeds multiply by active combo warp boost coefficients
+                const slowSpeed = (12 + level * 8) * dt * warpBoost;
+                const fastSpeed = (30 + level * 20) * dt * warpBoost;
 
-                // Update deep background layer
                 const posSlowAttr = starfieldSlow.geometry.attributes.position;
                 const arrSlow = posSlowAttr.array;
                 for (let i = 0; i < arrSlow.length; i += 3) {
                     arrSlow[i+2] += slowSpeed;
-                    // Reset single point if it flies behind player camera bounds
                     if (arrSlow[i+2] > 15) {
                         arrSlow[i] = (Math.random() - 0.5) * 180;
                         arrSlow[i+1] = (Math.random() - 0.5) * 120;
@@ -1105,7 +1327,6 @@
                 }
                 posSlowAttr.needsUpdate = true;
 
-                // Update close foreground layer
                 const posFastAttr = starfieldFast.geometry.attributes.position;
                 const arrFast = posFastAttr.array;
                 for (let i = 0; i < arrFast.length; i += 3) {
@@ -1118,9 +1339,75 @@
                 }
                 posFastAttr.needsUpdate = true;
 
-                // Rotational complexity shifts over levels (Turbulence)
                 starfieldSlow.rotation.z += (0.01 + level * 0.01) * dt;
                 starfieldFast.rotation.z -= (0.02 + level * 0.015) * dt;
+
+                // Decelerate Warp boost slowly back to normal
+                if (warpBoost > 1.0) {
+                    warpBoost = Math.max(1.0, warpBoost - dt * 0.7);
+                }
+            }
+
+            // Scans the active board layout to suggest matches for struggling students
+            function calculatePotentialMatchHelp() {
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        const node = board[r][c];
+                        if (!node || node.specialType !== "NORMAL") continue;
+
+                        const directions = [[1,0], [0,1]]; // check right and down swaps
+                        for (let dIdx = 0; dIdx < directions.length; dIdx++) {
+                            const offset = directions[dIdx];
+                            const adjR = r + offset[1];
+                            const adjC = c + offset[0];
+
+                            if (adjR >= 0 && adjR < rows && adjC >= 0 && adjC < cols) {
+                                const adjNode = board[adjR][adjC];
+                                if (adjNode && adjNode.specialType === "NORMAL") {
+                                    // Virtual Swap
+                                    const origKey = node.groupKey;
+                                    const adjKey = adjNode.groupKey;
+
+                                    node.groupKey = adjKey;
+                                    adjNode.groupKey = origKey;
+
+                                    const isMatch = checkVirtualBoardMatch(r, c) || checkVirtualBoardMatch(adjR, adjC);
+
+                                    // Restore
+                                    node.groupKey = origKey;
+                                    adjNode.groupKey = adjKey;
+
+                                    if (isMatch) {
+                                        const cleanGroupName = origKey === "const" ? "Constants" : `Pronumeral '${origKey}'`;
+                                        return cleanGroupName;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                return null;
+            }
+
+            function checkVirtualBoardMatch(r, c) {
+                const targetKey = board[r][c].groupKey;
+                // Horizontal Match Check
+                let hCount = 1;
+                let colIdx = c - 1;
+                while (colIdx >= 0 && board[r][colIdx] && board[r][colIdx].groupKey === targetKey && board[r][colIdx].specialType === "NORMAL") { hCount++; colIdx--; }
+                colIdx = c + 1;
+                while (colIdx < cols && board[r][colIdx] && board[r][colIdx].groupKey === targetKey && board[r][colIdx].specialType === "NORMAL") { hCount++; colIdx++; }
+                if (hCount >= 3) return true;
+
+                // Vertical Match Check
+                let vCount = 1;
+                let rowIdx = r - 1;
+                while (rowIdx >= 0 && board[rowIdx][c] && board[rowIdx][c].groupKey === targetKey && board[rowIdx][c].specialType === "NORMAL") { vCount++; rowIdx--; }
+                rowIdx = r + 1;
+                while (rowIdx < rows && board[rowIdx][c] && board[rowIdx][c].groupKey === targetKey && board[rowIdx][c].specialType === "NORMAL") { vCount++; rowIdx++; }
+                if (vCount >= 3) return true;
+
+                return false;
             }
 
             function animate() {
@@ -1130,7 +1417,6 @@
                 const dt = (currentFrameTime - lastFrameTime) / 1000;
                 lastFrameTime = currentFrameTime;
 
-                // Starfields scroll regardless of active match-states to maintain constant spatial visual flow
                 updateStars(dt);
 
                 if (gameActive) {
@@ -1138,6 +1424,20 @@
                     updateMeshPositions();
                     updateParticles();
                     updateFloatingTexts();
+
+                    // Check Student Idle Time for hints
+                    if (boardState === "READY") {
+                        idleTimer += dt;
+                        if (idleTimer > 8.0) {
+                            idleTimer = 0.0; // reset
+                            const matchingPrHelp = calculatePotentialMatchHelp();
+                            if (matchingPrHelp) {
+                                addLog(`HINT: Swaps are available to align matching ${matchingPrHelp}!`);
+                            }
+                        }
+                    } else {
+                        idleTimer = 0.0;
+                    }
                 }
 
                 if (selectedNode && boardState === "READY" && selectionRing) {
@@ -1206,6 +1506,8 @@
 
                     if (clickedNode) {
                         playTick();
+                        // Reset idle timers on interaction
+                        idleTimer = 0.0;
                         if (selectedNode === null) {
                             selectedNode = clickedNode;
                         } else {
@@ -1259,18 +1561,37 @@
                 }
             }
 
-            function generateBurst(pos, color, count = 15) {
+            function generateBurst(pos, color, count = 15, animType = "SPIRAL") {
                 const geom = new THREE.BufferGeometry();
                 const positions = new Float32Array(count * 3);
                 const dirs = [];
+
                 for (let i = 0; i < count; i++) {
                     positions[i*3] = pos.x; positions[i*3+1] = pos.y; positions[i*3+2] = pos.z;
-                    dirs.push({ x: (Math.random()-0.5)*0.5, y: (Math.random()-0.5)*0.5, z: (Math.random()-0.5)*0.5 });
+
+                    if (animType === "IMPLODE") {
+                        const r = 2.0;
+                        const angle = (i / count) * Math.PI * 2;
+                        positions[i*3] += Math.cos(angle) * r;
+                        positions[i*3+1] += Math.sin(angle) * r;
+                        dirs.push({ x: -Math.cos(angle) * 0.12, y: -Math.sin(angle) * 0.12, z: (Math.random() - 0.5) * 0.1 });
+                    } else if (animType === "SHOCKWAVE") {
+                        const angle = (i / count) * Math.PI * 2;
+                        dirs.push({ x: Math.cos(angle) * 0.25, y: Math.sin(angle) * 0.25, z: 0 });
+                    } else {
+                        const angle = (i / count) * Math.PI * 2;
+                        dirs.push({ 
+                            x: Math.cos(angle) * 0.15 + (Math.random() - 0.5) * 0.05, 
+                            y: Math.sin(angle) * 0.15 + (Math.random() - 0.5) * 0.05, 
+                            z: (Math.random() - 0.5) * 0.15 
+                        });
+                    }
                 }
+
                 geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
                 const points = new THREE.Points(geom, new THREE.PointsMaterial({ size: 0.5, color: color, transparent: true, blending: THREE.AdditiveBlending }));
                 gridContainer.add(points);
-                particles.push({ points: points, directions: dirs, age: 0, maxAge: 25 });
+                particles.push({ points: points, directions: dirs, age: 0, maxAge: 25, type: animType });
             }
 
             function create3DPopup(pos, text, color) {
@@ -1293,10 +1614,19 @@
                     const p = particles[i]; p.age++;
                     const attr = p.points.geometry.attributes.position;
                     const arr = attr.array;
+
                     for (let j = 0; j < arr.length/3; j++) {
-                        arr[j*3] += p.directions[j].x;
-                        arr[j*3+1] += p.directions[j].y;
-                        arr[j*3+2] += p.directions[j].z;
+                        if (p.type === "SPIRAL") {
+                            const x = arr[j*3] - p.points.position.x;
+                            const y = arr[j*3+1] - p.points.position.y;
+                            arr[j*3] += p.directions[j].x - y * 0.03;
+                            arr[j*3+1] += p.directions[j].y + x * 0.03;
+                            arr[j*3+2] += p.directions[j].z;
+                        } else {
+                            arr[j*3] += p.directions[j].x;
+                            arr[j*3+1] += p.directions[j].y;
+                            arr[j*3+2] += p.directions[j].z;
+                        }
                     }
                     attr.needsUpdate = true;
                     p.points.material.opacity = 1.0 - (p.age / p.maxAge);
@@ -1361,6 +1691,9 @@
                 stats.violations = 0;
                 stats.totalSwaps = 0;
                 stats.accuracy = 100;
+                comboMultiplier = 1;
+                warpBoost = 1.0;
+                idleTimer = 0.0;
 
                 scoreVal.textContent = "0";
                 levelVal.textContent = "1";
@@ -1373,7 +1706,7 @@
                 addLog("ALIGNING SIMPLIFICATION ALGORITHMS...");
                 addLog("COORDINATE GRID STABLE.");
 
-                buildStars(); // Re-seed starfields to clean active rotations
+                buildStars(); 
                 resetBoard();
             }
 
